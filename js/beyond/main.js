@@ -36,31 +36,31 @@ async function boot() {
   const setStep = (p, n) => { $('load-bar').style.width = p + '%'; $('load-pct').textContent = p + '%'; $('load-step').textContent = n; };
   const yf = () => new Promise(r => setTimeout(r, 16));
 
-  setStep(4, 'SPINNING UP RENDERER'); await yf();
+  setStep(4, '正在启动渲染器'); await yf();
   initRenderer();
 
-  setStep(14, 'SYNTHESIZING PLANET SURFACE'); await yf();
-  const maps = makeEarthMaps(isMobile ? 768 : 1024, isMobile ? 384 : 512);
+  setStep(14, '正在合成行星表面'); await yf();
+  const maps = makeEarthMaps(isMobile ? 1024 : 2048, isMobile ? 512 : 1024);
   const moon = makeMoonMap();
 
-  setStep(40, 'ASSEMBLING SOL SYSTEM'); await yf();
+  setStep(40, '正在装配太阳系'); await yf();
   L1 = new L1Solar();
   scene.add(L1.group);
 
-  setStep(58, 'MAPPING THE GALAXY'); await yf();
+  setStep(58, '正在绘制银河星图'); await yf();
   L2 = new L2Galaxy(QUALITY);
   scene.add(L2.group);
 
-  setStep(74, 'INSTALLING MEGASTRUCTURES'); await yf();
+  setStep(74, '正在安装巨构'); await yf();
   L0 = new L0Earth({ maps, moonCanvas: moon, quality: QUALITY });
   scene.add(L0.group);
 
-  setStep(88, 'COMPILING SHADERS'); await yf();
+  setStep(88, '正在编译着色器'); await yf();
   renderer.compile(scene, camera);
   renderer.setAnimationLoop(null);
-  animate(0);
+  animate();
 
-  setStep(100, 'READY'); await yf();
+  setStep(100, '就绪'); await yf();
   window.__boot.started = true;
   $('loading').style.opacity = '0';
   setTimeout(() => $('loading').remove(), 900);
@@ -72,13 +72,13 @@ function initRenderer() {
     canvas: $('gl'), antialias: !isMobile, powerPreference: 'high-performance',
     logarithmicDepthBuffer: true,
   });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, QUALITY === 'high' ? 2 : 1.25));
+  applyDRSLevel();
   renderer.setSize(innerWidth, innerHeight);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.12;
+  renderer.toneMappingExposure = 1.0;
 
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x010205);
+  scene.background = new THREE.Color(0xe9f2f8);   // 晨光星图浅底
   camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, .1, 3.2e6);
   camera.position.set(-260, 140, 420);
 
@@ -87,13 +87,47 @@ function initRenderer() {
   controls.minDistance = 8; controls.maxDistance = 2.6e6;
   controls.rotateSpeed = .55;
 
-  sunLight = new THREE.DirectionalLight(0xfff3e0, 2.3);
+  sunLight = new THREE.DirectionalLight(0xfff6e8, 2.6);
   sunLight.position.copy(SUN_POS).multiplyScalar(4000); // 太阳方向照明
   scene.add(sunLight);
-  scene.add(new THREE.HemisphereLight(0x8ab8d8, 0x0a121e, .32));
+  scene.add(new THREE.HemisphereLight(0xd8ecf8, 0xc8d8e4, 1.1));
 
   post = buildPost(renderer, scene, camera, QUALITY);
   clock = new THREE.Clock();
+
+  // —— 稳定性：WebGL 上下文丢失/恢复 ——
+  const cvs = renderer.domElement;
+  cvs.addEventListener('webglcontextlost', (e) => {
+    e.preventDefault();
+    renderer.setAnimationLoop(null);
+    toast('图形上下文丢失，正在恢复…');
+  });
+  cvs.addEventListener('webglcontextrestored', () => {
+    renderer.setAnimationLoop(safeAnimate);
+    toast('图形已恢复');
+  });
+}
+
+/* —— 自适应分辨率（DRS）—— */
+const DRS_LEVELS = [2, 1.6, 1.3, 1.05];
+let drsIdx = Math.min(3, +(localStorage.getItem('emb-drs') || 0)) || 0;
+function applyDRSLevel() {
+  renderer.setPixelRatio(Math.min(devicePixelRatio, DRS_LEVELS[drsIdx]));
+  post && post.composer.setSize(innerWidth, innerHeight);
+}
+const DRS = { acc: 0, n: 0, cool: 0 };
+function drsUpdate(dt) {
+  DRS.acc += dt; DRS.n++;
+  if (DRS.acc < 1.5) return;
+  const fps = DRS.n / DRS.acc;
+  DRS.acc = 0; DRS.n = 0;
+  if (fps < 42 && drsIdx < 3) {
+    drsIdx++; localStorage.setItem('emb-drs', drsIdx); applyDRSLevel();
+  } else if (fps > 57 && drsIdx > 0 && DRS.cool <= 0) {
+    drsIdx--; localStorage.setItem('emb-drs', drsIdx); applyDRSLevel();
+    DRS.cool = 3;
+  }
+  if (DRS.cool > 0) DRS.cool -= 1.5;
 }
 
 /* ═══════════ 目的地解析 ═══════════ */
@@ -207,7 +241,7 @@ const Film = {
     if (this.chLocal >= ch.dur) {
       setChapterCard(this.chIdx, false);
       this.chIdx++;
-      if (this.chIdx >= CHAPTERS.length) { this.exit(); toast('ARRIVAL · 任务完成，自由探索银河'); return; }
+      if (this.chIdx >= CHAPTERS.length) { this.exit(); toast('抵达新家园 · 任务完成，自由探索银河'); return; }
       this.chLocal = 0;
       setChapterCard(this.chIdx, true);
       audio.setChapter(this.chIdx);
@@ -228,7 +262,7 @@ const Film = {
     if (this.chIdx === 1) {
       const on = this.t > 44;
       audio.timeWarp(on);
-      if (on && !this._warped) { this._warped = true; toast('TIME COMPRESSION · 时间压缩启动'); }
+      if (on && !this._warped) { this._warped = true; toast('时间压缩启动 · 1 年 ≈ 3 秒'); }
     } else { this._warped = false; audio.timeWarp(false); }
     // 冰封推进
     S.iceAmt = smoothstep(2100, 2600, S.year) * .8 * (1 - smoothstep(4450, 4578, S.year));
@@ -314,17 +348,17 @@ const SPEEDS = [
 /* ═══════════ 遥测 ═══════════ */
 function regionOf() {
   const km = S.distKm;
-  if (km < 2e5) return 'EARTH ORBIT';
-  if (km < 1.2 * AU_KM) return 'INNER SYSTEM';
-  if (km < 6 * AU_KM) return 'ASTEROID BELT';
-  if (km < 12 * AU_KM) return 'JUPITER APPROACH';
-  if (km < 16 * AU_KM) return 'SATURN CROSSING';
-  if (km < 50 * AU_KM) return 'OUTER SYSTEM';
-  if (km < 110 * AU_KM) return 'KUIPER BELT';
-  if (km < 125 * AU_KM) return 'HELIOPAUSE';
-  if (km < .5 * LY_KM) return 'INTERSTELLAR SPACE';
-  if (km < 1600 * LY_KM) return 'LOCAL BUBBLE';
-  return 'ORION SPUR';
+  if (km < 2e5) return '地球轨道';
+  if (km < 1.2 * AU_KM) return '内太阳系';
+  if (km < 6 * AU_KM) return '小行星带';
+  if (km < 12 * AU_KM) return '木星接近';
+  if (km < 16 * AU_KM) return '土星环交叉';
+  if (km < 50 * AU_KM) return '外太阳系';
+  if (km < 110 * AU_KM) return '柯伊伯带';
+  if (km < 125 * AU_KM) return '日球层顶';
+  if (km < .5 * LY_KM) return '星际空间';
+  if (km < 1600 * LY_KM) return '本地泡';
+  return '猎户臂';
 }
 function updateTele() {
   S.distKm = distKmAt(S.year);
@@ -333,7 +367,7 @@ function updateTele() {
   const l = ((Math.atan2(dir.z, -dir.x) / Math.PI * 12 + 24) % 24).toFixed(1);
   const b = (Math.asin(clamp(dir.y, -1, 1)) / Math.PI * 12).toFixed(1);
   dash.setTele({
-    eng: S.enginePower > .95 ? 'BURN · 100%' : S.enginePower > 0 ? `IGNITION ${(S.enginePower * 100) | 0}%` : 'STANDBY',
+    eng: S.enginePower > .95 ? '全功率燃烧' : S.enginePower > 0 ? `点火 ${(S.enginePower * 100) | 0}%` : '待命',
     vel: fmtSpeed(S.vel),
     dsol: fmtDist(S.distKm),
     ltime: fmtLightTime(S.distKm),
@@ -398,7 +432,7 @@ function bindUI() {
   dash.onSound = () => {
     S.soundOn = !S.soundOn;
     audio.masterOn(S.soundOn);
-    $('b-sound').textContent = S.soundOn ? '♪ ON' : '♪ OFF';
+    $('b-sound').textContent = S.soundOn ? '♪ 开' : '♪ 关';
   };
   dash.onHud = () => {
     S.hudOn = !S.hudOn;
@@ -446,7 +480,7 @@ function bindUI() {
     $('enter').style.visibility = 'hidden';
     $('app').classList.remove('hidden');
     S.enginePower = 1;
-    toast('EXPLORE · 右侧选目的地 · 底部 ▶ 播放影片 · 左下拖动时间轴');
+    toast('自由探索 · 右侧选目的地 · 底部 ▶ 播放影片 · 左下拖动时间轴');
   });
 }
 
@@ -504,11 +538,35 @@ function animate() {
   frames++; fpsT += dt;
   if (fpsT >= 1) { S.fps = frames / fpsT; frames = 0; fpsT = 0; }
   window.__stats = { fps: S.fps, year: S.year };
+  drsUpdate(dt);
 }
+
+/* 渲染循环防护：单帧异常不炸整个体验，连续 3 次停机降级后重试 */
+let errStreak = 0;
+function safeAnimate() {
+  try { animate(); errStreak = 0; }
+  catch (e) {
+    console.error('[render]', e);
+    if (++errStreak >= 3) {
+      renderer.setAnimationLoop(null);
+      toast('渲染异常 · 已切换安全模式');
+      post.bloom.enabled = false;
+      renderer.setAnimationLoop(safeAnimate);
+      errStreak = 0;
+    }
+  }
+}
+
+/* 可见性：离开页面静音，回来丢弃积压帧 */
+document.addEventListener('visibilitychange', () => {
+  if (!clock) return;
+  if (document.hidden) { audio.ctx && audio.masterOn(false); }
+  else { clock.getDelta(); audio.ctx && audio.masterOn(S.soundOn); }
+});
 
 bindUI();
 boot().then(() => {
-  renderer.setAnimationLoop(animate);
+  renderer.setAnimationLoop(safeAnimate);
 }).catch(err => {
   const m = document.getElementById('boot-fault-msg');
   document.getElementById('boot-fault').style.display = 'block';

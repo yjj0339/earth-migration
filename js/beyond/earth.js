@@ -68,7 +68,7 @@ export class L0Earth {
           float ndl = dot(N, normalize(uSunDir));
           float dayAmt = smoothstep(-.09, .18, ndl);
           float dusk = exp(-abs(ndl) * 9.0);
-          vec3 col = day * (dayAmt * 1.24 + .012);
+          vec3 col = day * (dayAmt * 1.42 + .035);
           col += day * dusk * vec3(1.0, .45, .18) * .5;
           vec3 cloudCol = mix(vec3(.04,.055,.085), vec3(1.0), dayAmt);
           col = mix(col, cloudCol, cloud * .78 * (dayAmt * .85 + .15));
@@ -84,7 +84,7 @@ export class L0Earth {
     this.earth = new THREE.Mesh(new THREE.SphereGeometry(EARTH_R, 96, 64), this.earthMat);
     g.add(this.earth);
 
-    this.atmos = createAtmosphere({ radius: EARTH_R * 1.035, strength: 1.15 });
+    this.atmos = createAtmosphere({ radius: EARTH_R * 1.035, strength: 1.0, rayleigh: 0x3d95c4, mie: 0xd8813c });
     g.add(this.atmos.mesh);
 
     /* —— 发动机（尾随半球，随点火进度点亮） —— */
@@ -119,12 +119,12 @@ export class L0Earth {
     this.towers = kit.build(M);
     g.add(this.towers);
 
-    // 光束实例
+    // 光束实例（普通混合：浅底上的深青光束）
     const beamGeo = new THREE.CylinderGeometry(.22, 1, 1, 10, 1, true);
     beamGeo.translate(0, .5, 0);
     this.beamUniforms = {
       uTime: { value: 0 }, uPower: { value: 0 },
-      uCore: { value: new THREE.Color(0xe8f8ff) }, uEdge: { value: new THREE.Color(0x2e9fd8) },
+      uCore: { value: new THREE.Color(0xffffff) }, uEdge: { value: new THREE.Color(0x1173ab) },
     };
     const beamMat = new THREE.ShaderMaterial({
       uniforms: this.beamUniforms,
@@ -148,11 +148,11 @@ export class L0Earth {
         void main() {
           float edge = pow(abs(dot(normalize(vN), normalize(vV))), 1.6);
           float flick = .82 + .18 * sin(uTime * 7.0 + vH * 14.0);
-          float a = (1.0 - vH) * edge * uPower * flick;
-          gl_FragColor = vec4(mix(uCore, uEdge, vH) * a * 1.6, a);
+          float a = (1.0 - vH * .82) * edge * uPower * flick * .78;
+          gl_FragColor = vec4(mix(uCore, uEdge, vH), a);
           #include <logdepthbuf_fragment>
         }`,
-      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+      transparent: true, depthWrite: false, blending: THREE.NormalBlending, side: THREE.DoubleSide,
     });
     const beams = new THREE.InstancedMesh(beamGeo, beamMat, sites.length);
     const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0);
@@ -249,10 +249,10 @@ export class L0Earth {
           float facing = smoothstep(-.2, .9, vN.x);
           vec3 col = mix(vec3(.35,.75,1.0), vec3(1.0,.72,.4), pow(1.0 - vN.x, 2.0));
           float a = rim * facing * uAmt * .8;
-          gl_FragColor = vec4(col * a * 1.6, a);
+          gl_FragColor = vec4(col * .72, a);   // 普通混合深青弓形激波
           #include <logdepthbuf_fragment>
         }`,
-      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+      transparent: true, depthWrite: false, blending: THREE.NormalBlending, side: THREE.DoubleSide,
     }));
     bow.scale.setScalar(EARTH_R * 2.3);
     bow.position.x = EARTH_R * .5;
@@ -271,8 +271,8 @@ export class L0Earth {
     const dustGeo = new THREE.BufferGeometry();
     dustGeo.setAttribute('position', new THREE.BufferAttribute(dp, 3));
     this.dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({
-      color: 0x9fb8cc, size: 2.2, transparent: true, opacity: 0, depthWrite: false, fog: false,
-      blending: THREE.AdditiveBlending,
+      color: 0x5f89a3, size: 2.2, transparent: true, opacity: 0, depthWrite: false, fog: false,
+      blending: THREE.NormalBlending,
     }));
     g.add(this.dust);
 

@@ -19,10 +19,10 @@ export class L2Galaxy {
   }
 
   build(quality) {
-    /* —— 近景星空（有视差）+ 银河带天幕 —— */
-    this.stars = makeStarfield(quality === 'high' ? 7000 : 3500, 2.6e4);
+    /* —— 近景星空（浅色星图风，带视差）+ 银河带天幕 —— */
+    this.stars = makeStarfield(quality === 'high' ? 7000 : 3500, 2.6e4, 11, true);
     this.group.add(this.stars);
-    this.sky = makeSkyDome();
+    this.sky = makeSkyDome(21, true);
     this.group.add(this.sky);
 
     /* —— 3D 银河（远离后浮现） —— */
@@ -59,12 +59,12 @@ export class L2Galaxy {
       pos[i * 3] = x;
       pos[i * 3 + 1] = (rand() - .5) * thick + (r > 30000 ? (rand() - .5) * 900 : 0);
       pos[i * 3 + 2] = z;
-      // 恒星配色：盘蓝白 → 内圈黄红 → 臂缘年轻蓝
+      // 恒星配色（星图风：深青墨为主，臂缘年轻蓝、内圈暖橙）
       const t = rand();
-      if (t > .8) c.setHSL(.6, .55, .72);
-      else if (t > .55) c.setHSL(.1, .45, .68);
-      else c.setHSL(.08 + rand() * .04, .25, .55 + rand() * .25);
-      if (r < 9000) c.lerp(new THREE.Color(1, .78, .5), .35);
+      if (t > .8) c.setHSL(.58, .5, .30);
+      else if (t > .55) c.setHSL(.09, .5, .34);
+      else c.setHSL(.56, .26, .16 + rand() * .18);
+      if (r < 9000) c.lerp(new THREE.Color(.72, .42, .18), .4);
       col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
       size[i] = .5 + Math.pow(rand(), 4) * 3.4;
     }
@@ -80,7 +80,7 @@ export class L2Galaxy {
       dpos[i * 3] = Math.cos(armA) * r;
       dpos[i * 3 + 1] = (rand() - .5) * 300;
       dpos[i * 3 + 2] = Math.sin(armA) * r;
-      dcol[i * 3] = .22; dcol[i * 3 + 1] = .12; dcol[i * 3 + 2] = .08;
+      dcol[i * 3] = .30; dcol[i * 3 + 1] = .17; dcol[i * 3 + 2] = .10;
       dsize[i] = 3 + rand() * 5;
     }
     this._addPoints(gal, dpos, dcol, dsize, N_DUST, .8, 'dust');
@@ -96,7 +96,7 @@ export class L2Galaxy {
       hpos[i * 3 + 1] = (rand() - .5) * 500;
       hpos[i * 3 + 2] = Math.sin(armA) * r;
       const pink = rand() > .5;
-      hcol[i * 3] = pink ? 1 : .5; hcol[i * 3 + 1] = pink ? .45 : .8; hcol[i * 3 + 2] = pink ? .6 : 1;
+      hcol[i * 3] = pink ? .86 : .24; hcol[i * 3 + 1] = pink ? .32 : .48; hcol[i * 3 + 2] = pink ? .46 : .82;
       hsize[i] = 6 + rand() * 12;
     }
     this._addPoints(gal, hpos, hcol, hsize, N_HII, .55, 'hii');
@@ -115,7 +115,7 @@ export class L2Galaxy {
         gpos[gi * 3] = cx + Math.sin(a2) * Math.cos(a1) * rr;
         gpos[gi * 3 + 1] = cy + Math.cos(a2) * rr;
         gpos[gi * 3 + 2] = cz + Math.sin(a2) * Math.sin(a1) * rr;
-        gcol[gi * 3] = 1; gcol[gi * 3 + 1] = .88; gcol[gi * 3 + 2] = .7;
+        gcol[gi * 3] = .62; gcol[gi * 3 + 1] = .42; gcol[gi * 3 + 2] = .2;
         gsize[gi] = .6 + Math.pow(rand(), 3) * 2;
         gi++;
       }
@@ -133,17 +133,17 @@ export class L2Galaxy {
         mpos[i * 3 + 1] = off.y + Math.cos(a2) * rr * .7;
         mpos[i * 3 + 2] = off.z + Math.sin(a2) * Math.sin(a1) * rr;
         const t = rand();
-        if (t > .85) { mcol[i * 3] = 1; mcol[i * 3 + 1] = .5; mcol[i * 3 + 2] = .65; }
-        else { mcol[i * 3] = .85; mcol[i * 3 + 1] = .85; mcol[i * 3 + 2] = .95; }
+        if (t > .85) { mcol[i * 3] = .82; mcol[i * 3 + 1] = .34; mcol[i * 3 + 2] = .42; }
+        else { mcol[i * 3] = .32; mcol[i * 3 + 1] = .42; mcol[i * 3 + 2] = .58; }
         msize[i] = .6 + Math.pow(rand(), 3) * 2.6;
       }
       this._addPoints(gal, mpos, mcol, msize, n, .75, name);
     }
 
-    // 银心辉光
+    // 银心辉光（浅底上的暖橙柔斑）
     const bulge = new THREE.Sprite(new THREE.SpriteMaterial({
-      color: 0xffd9a0, transparent: true, opacity: .0, depthWrite: false, fog: false,
-      blending: THREE.AdditiveBlending,
+      color: 0xf2b06a, transparent: true, opacity: .0, depthWrite: false, fog: false,
+      blending: THREE.NormalBlending,
     }));
     bulge.position.set(0, 0, 0);
     bulge.scale.set(5200, 3600, 1);
@@ -200,7 +200,7 @@ export class L2Galaxy {
           gl_FragColor = vec4(vCol, a);
           #include <logdepthbuf_fragment>
         }`,
-      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      transparent: true, depthWrite: false, blending: THREE.NormalBlending,
     });
     mat.fog = false;
     const pts = new THREE.Points(geo, mat);

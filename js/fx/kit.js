@@ -75,25 +75,25 @@ Kit.G = {
   sphere: new THREE.SphereGeometry(1, 20, 14),
 };
 
-/** 常用 PBR 材质库（深空金属 + 警示涂装） */
+/** 常用 PBR 材质库（浅色制图风：亮金属 + 深青警示） */
 export function stdMaterials() {
   const M = {
-    hull: new THREE.MeshStandardMaterial({ color: 0x8a97a8, metalness: .85, roughness: .42 }),
-    hullDark: new THREE.MeshStandardMaterial({ color: 0x39424f, metalness: .8, roughness: .55 }),
-    hullLight: new THREE.MeshStandardMaterial({ color: 0xc9d4e2, metalness: .7, roughness: .38 }),
-    amber: new THREE.MeshStandardMaterial({ color: 0xb06a1e, metalness: .4, roughness: .5, emissive: 0x331b00 }),
-    cyan: new THREE.MeshStandardMaterial({ color: 0x0d5f7a, metalness: .6, roughness: .35, emissive: 0x0a3346 }),
+    hull: new THREE.MeshStandardMaterial({ color: 0x9fadbd, metalness: .82, roughness: .44 }),
+    hullDark: new THREE.MeshStandardMaterial({ color: 0x53616f, metalness: .78, roughness: .55 }),
+    hullLight: new THREE.MeshStandardMaterial({ color: 0xd9e3ec, metalness: .68, roughness: .4 }),
+    amber: new THREE.MeshStandardMaterial({ color: 0xc07a28, metalness: .35, roughness: .5, emissive: 0x2e1a00 }),
+    cyan: new THREE.MeshStandardMaterial({ color: 0x1876a8, metalness: .55, roughness: .38, emissive: 0x06283a }),
     engineGlow: new THREE.MeshStandardMaterial({
-      color: 0xbfeaff, emissive: 0x9fdcff, emissiveIntensity: 2.6,
+      color: 0xffffff, emissive: 0x38b8e8, emissiveIntensity: 2.2,
       metalness: 0, roughness: .3,
     }),
     hot: new THREE.MeshStandardMaterial({
-      color: 0xffdcae, emissive: 0xffb46a, emissiveIntensity: 3.2,
+      color: 0xffffff, emissive: 0xf09a3c, emissiveIntensity: 2.6,
       metalness: 0, roughness: .4,
     }),
-    rock: new THREE.MeshStandardMaterial({ color: 0x6b6560, metalness: .05, roughness: .95 }),
-    ice: new THREE.MeshStandardMaterial({ color: 0xbfe6f5, metalness: .1, roughness: .25 }),
-    default: new THREE.MeshStandardMaterial({ color: 0x777777, metalness: .6, roughness: .5 }),
+    rock: new THREE.MeshStandardMaterial({ color: 0x8a8178, metalness: .05, roughness: .95 }),
+    ice: new THREE.MeshStandardMaterial({ color: 0xd4ecf7, metalness: .1, roughness: .25 }),
+    default: new THREE.MeshStandardMaterial({ color: 0x8b96a3, metalness: .6, roughness: .5 }),
   };
   return M;
 }

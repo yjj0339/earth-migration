@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#010205">
-<title>Beyond the Wandering Earth · 流浪地球之外</title>
-<meta name="description" content="地球迁移计划 第二部：从 100 公里到十万光年——三层尺度阶梯、25 个目的地、时间压缩与实时遥测。同人作品，非官方关联。">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='20' fill='%23040c18' stroke='%239fd8ff' stroke-width='3'/><path d='M14 40 Q32 52 50 40' stroke='%23ffcf8a' fill='none' stroke-width='3'/></svg>">
+<meta name="theme-color" content="#eef5fa">
+<title>流浪地球之外 · 从 100 公里到十万光年</title>
+<meta name="description" content="地球迁移计划 第二部：三层尺度阶梯、25 个目的地、时间压缩与实时遥测。同人作品，非官方关联。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='20' fill='%23eef5fa' stroke='%230f6c8e' stroke-width='3'/><path d='M14 40 Q32 52 50 40' stroke='%23b26a1a' fill='none' stroke-width='3'/></svg>">
 <link rel="stylesheet" href="css/beyond.css">
 <script src="boot.js"></script>
 <script type="importmap">
@@ -24,30 +24,31 @@
 <div id="loading">
   <div class="load-core">
     <div class="load-emblem"><div class="load-planet"></div><div class="load-beam"></div></div>
-    <div class="load-title">BEYOND THE WANDERING EARTH</div>
-    <div class="load-sub">100 KM → 100,000 LIGHT-YEARS · 三层尺度阶梯</div>
+    <div class="load-title">流浪地球之外</div>
+    <div class="load-sub">100 公里 → 十万光年 · 三层尺度阶梯</div>
     <div class="load-track"><div id="load-bar"></div></div>
-    <div class="load-row"><span id="load-step">INITIALIZING</span><span id="load-pct">0%</span></div>
-    <div class="load-row dim"><span>UEG · DEEP SPACE NAVIGATION</span><span>MOSS/4.2</span></div>
+    <div class="load-row"><span id="load-step">正在初始化</span><span id="load-pct">0%</span></div>
+    <div class="load-row dim"><span>联合政府 · 深空导航局</span><span>MOSS/4.2</span></div>
   </div>
-  <div id="boot-fault"><div class="fault-head">SYSTEM FAULT</div><div id="boot-fault-msg"></div></div>
+  <div id="boot-fault"><div class="fault-head">系统故障</div><div id="boot-fault-msg"></div></div>
 </div>
 
 <!-- 入口 -->
 <div id="enter" class="hidden">
   <div class="en-stars"></div>
   <div class="en-core">
-    <div class="en-kicker">THE EARTH MIGRATION PROJECT · PART II</div>
+    <div class="en-kicker">地球迁移计划 · 第二部</div>
+    <div class="en-title-zh">流 浪 地 球 之 外</div>
     <h1 class="en-title">BEYOND THE<br>WANDERING EARTH</h1>
-    <div class="en-tag">流浪地球之外 · 从 100 公里到十万光年</div>
+    <div class="en-tag">从 100 公里到十万光年</div>
     <div class="en-stats">
       <div><b>25</b><span>目的地</span></div>
       <div><b>3</b><span>尺度层</span></div>
       <div><b>500</b><span>任务年</span></div>
       <div><b>26</b><span>事件记录</span></div>
     </div>
-    <button id="btn-enter" class="en-btn">▶&ensp;BEGIN VOYAGE · 开始航程</button>
-    <a class="en-back" href="index.html">← PART I · THE EARTH MIGRATION PROJECT</a>
+    <button id="btn-enter" class="en-btn">开始航程</button>
+    <a class="en-back" href="index.html">← 第一部 · 地球迁移计划</a>
   </div>
 </div>
 
@@ -57,23 +58,23 @@
 
   <!-- 顶部玻璃条 -->
   <header id="topbar">
-    <div class="tb-brand">BEYOND<br>THE WANDERING EARTH</div>
+    <div class="tb-brand">流浪地球之外</div>
     <div class="tb-tele" id="tele">
-      <div class="tc"><span class="k">ENGINE</span><span class="v mono" id="t-eng">STANDBY</span></div>
-      <div class="tc"><span class="k">VELOCITY</span><span class="v mono" id="t-vel">29.8 KM/S</span></div>
-      <div class="tc"><span class="k">DIST SOL</span><span class="v mono" id="t-dsol">1.00 AU</span></div>
-      <div class="tc"><span class="k">LIGHT TIME</span><span class="v mono" id="t-ltime">8.3 MIN</span></div>
-      <div class="tc"><span class="k">REGION</span><span class="v mono" id="t-region">EARTH ORBIT</span></div>
-      <div class="tc"><span class="k">GAL COORDS</span><span class="v mono" id="t-gal">—</span></div>
-      <div class="tc"><span class="k">MISSION</span><span class="v mono gold" id="t-year">Y2078</span></div>
-      <div class="tc"><span class="k">FOV</span><span class="v mono" id="t-fov">50°</span></div>
+      <div class="tc"><span class="k">引擎</span><span class="v mono" id="t-eng">待命</span></div>
+      <div class="tc"><span class="k">速度</span><span class="v mono" id="t-vel">29.8 KM/S</span></div>
+      <div class="tc"><span class="k">距太阳</span><span class="v mono" id="t-dsol">1.00 AU</span></div>
+      <div class="tc"><span class="k">光行时</span><span class="v mono" id="t-ltime">8.3 MIN</span></div>
+      <div class="tc"><span class="k">区域</span><span class="v mono" id="t-region">地球轨道</span></div>
+      <div class="tc"><span class="k">银道坐标</span><span class="v mono" id="t-gal">—</span></div>
+      <div class="tc"><span class="k">任务年</span><span class="v mono gold" id="t-year">Y2078</span></div>
+      <div class="tc"><span class="k">视场</span><span class="v mono" id="t-fov">50°</span></div>
     </div>
     <div class="tb-actions">
-      <button id="b-film" class="tb-mode">FILM</button>
-      <button id="b-explore" class="tb-mode on">EXPLORE</button>
-      <button id="b-sound" class="tb-ic" title="声音">♪ ON</button>
-      <button id="b-hud" class="tb-ic" title="隐藏仪表盘">▤ HUD</button>
-      <button id="b-full" class="tb-ic" title="全屏">⛶ FULL</button>
+      <button id="b-film" class="tb-mode">影片</button>
+      <button id="b-explore" class="tb-mode on">探索</button>
+      <button id="b-sound" class="tb-ic" title="声音">♪ 开</button>
+      <button id="b-hud" class="tb-ic" title="隐藏仪表盘">▤ 面板</button>
+      <button id="b-full" class="tb-ic" title="全屏">⛶ 全屏</button>
     </div>
   </header>
 
@@ -85,13 +86,13 @@
 
   <!-- 右：目的地 -->
   <aside id="dest" class="panelish">
-    <div class="de-head">DESTINATIONS · 目的地 <i>25</i></div>
+    <div class="de-head">目的地 <i>25</i></div>
     <div id="dest-list"></div>
   </aside>
 
   <!-- 左下：VOYAGE 时间轴 -->
   <div id="voyage" class="panelish">
-    <div class="vo-head">VOYAGE TIMELINE · 航程时间轴</div>
+    <div class="vo-head">航程时间轴</div>
     <div class="vo-row"><span id="voyage-year">Y2078</span>
       <input type="range" id="voyage-slider" min="2078" max="4578" step="1" value="2078">
       <span>Y4578</span>
@@ -101,7 +102,7 @@
 
   <!-- 右下：事件日志 -->
   <div id="log" class="panelish">
-    <div class="lg-head">EVENT LOG · 事件日志 <i id="log-count">00 / 26</i></div>
+    <div class="lg-head">事件日志 <i id="log-count">00 / 26</i></div>
     <div id="log-list"></div>
   </div>
 
@@ -110,17 +111,17 @@
     <button id="b-play" title="播放/暂停">▶</button>
     <div id="ch-segs"></div>
     <span class="mono" id="b-time">00:00 / 02:54</span>
-    <button id="b-exit" title="退出影片">EXIT</button>
+    <button id="b-exit" title="退出影片">退出</button>
   </div>
 
   <!-- 影片 -->
   <div id="film" class="hidden">
     <div class="letterbox top"></div>
     <div class="letterbox bottom"></div>
-    <div id="chapter-card"><div id="ch-num">01</div><div id="ch-title">The Wandering Earth</div><div id="ch-era">2078</div></div>
+    <div id="chapter-card"><div id="ch-num">01</div><div id="ch-title">流浪地球</div><div id="ch-era">2078 · 1 AU</div></div>
     <div id="subtitle"><div id="sub-kicker"></div><div id="sub-title"></div><div id="sub-sub"></div></div>
-    <div id="count-ring"><div class="cr-ring"></div><div class="cr-num">10</div><div class="cr-lab">GLOBAL IGNITION SEQUENCE</div></div>
-    <div id="scroll-hint">SCROLLING THROUGH TIME · PRESS ▶ TO RESUME</div>
+    <div id="count-ring"><div class="cr-ring"></div><div class="cr-num">10</div><div class="cr-lab">全球点火序列</div></div>
+    <div id="scroll-hint">正在穿越时间 · 按 ▶ 继续</div>
     <div id="f-track"><div id="f-prog"></div><div id="f-ticks"></div></div>
   </div>
 

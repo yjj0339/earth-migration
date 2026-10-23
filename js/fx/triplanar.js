@@ -80,14 +80,14 @@ void main() {
   float rough = clamp(uRough + det * .22, .05, 1.0);
   gl_FragColor = vec4(col, 1.0);
 
-  // 简化光照：主光 + 环境 + 视线菲涅尔缘光（用于无场景灯的合成底座）
+  // 简化光照：主光 + 明亮环境（浅色宇宙）+ 边缘深青压边
   vec3 V = normalize(cameraPosition - vWPos);
   vec3 L = normalize(vec3(.5, .8, .6));
   float ndl = max(dot(vWNormal, L), 0.0);
   float fres = pow(1.0 - max(dot(V, vWNormal), 0.0), 3.0);
-  vec3 ambient = mix(vec3(.05,.08,.13), vec3(.10,.14,.20), det);
-  vec3 lit3 = col * (ambient + ndl * vec3(1.05, .98, .9) * 1.25) + fres * vec3(.35,.6,.85) * .35;
-  lit3 += emissive * 2.4;
+  vec3 ambient = mix(vec3(.62,.70,.78), vec3(.74,.80,.86), det);
+  vec3 lit3 = col * (ambient + ndl * vec3(.55,.52,.48)) + fres * vec3(.16,.30,.42) * .38;
+  lit3 += emissive * 2.2;
   gl_FragColor = vec4(lit3, 1.0);
   #include <logdepthbuf_fragment>
   #include <colorspace_fragment>
@@ -100,10 +100,10 @@ export function triplanarMaterial(opts = {}) {
     vertexShader: TRIMAT_VERT,
     fragmentShader: TRIMAT_FRAG,
     uniforms: {
-      uBaseColor: { value: new THREE.Color(opts.base ?? 0x77828f) },
-      uPanelA: { value: new THREE.Color(opts.panelA ?? 0x8fa0b4) },
-      uPanelB: { value: new THREE.Color(opts.panelB ?? 0x3d4653) },
-      uWindowColor: { value: new THREE.Color(opts.window ?? 0xbfe8ff) },
+      uBaseColor: { value: new THREE.Color(opts.base ?? 0xa7b4c4) },
+      uPanelA: { value: new THREE.Color(opts.panelA ?? 0xc2d0de) },
+      uPanelB: { value: new THREE.Color(opts.panelB ?? 0x5c6a78) },
+      uWindowColor: { value: new THREE.Color(opts.window ?? 0x0d5f86) },
       uScale: { value: opts.scale ?? 2.2 },
       uWindowScale: { value: opts.windowScale ?? 1.5 },
       uRough: { value: opts.rough ?? .55 },

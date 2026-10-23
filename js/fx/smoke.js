@@ -82,8 +82,8 @@ export function createSmoke(opts = {}) {
     uSpread: { value: opts.spread ?? 1.2 },
     uSize: { value: opts.size ?? 60 },
     uPix: { value: window.devicePixelRatio * 400 },
-    uColor: { value: new THREE.Color(opts.color ?? 0x9fb4c8) },
-    uOpacity: { value: opts.opacity ?? .3 },
+    uColor: { value: new THREE.Color(opts.color ?? 0x7fa3ba) },
+    uOpacity: { value: opts.opacity ?? .22 },
   };
   const mat = new THREE.ShaderMaterial({
     vertexShader: VERT, fragmentShader: FRAG, uniforms,

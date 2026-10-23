@@ -114,8 +114,10 @@ void main() {
     trans *= (1.0 - a);
   }
 
-  if (max(acc.r, max(acc.g, acc.b)) < .003) discard;
-  gl_FragColor = vec4(acc, 1.0);
+  if (max(acc.r, max(acc.g, acc.b)) < .004) discard;
+  // 浅色场景：普通混合，亮度即透明度（白底上呈现深青光束）
+  float a = clamp(max(acc.r, max(acc.g, acc.b)) * 1.15, 0.0, .92);
+  gl_FragColor = vec4(acc, a);
   #include <logdepthbuf_fragment>
   #include <colorspace_fragment>
 }
@@ -136,8 +138,8 @@ export function createPlume(opts = {}) {
     uRadius: { value: radius },
     uIntensity: { value: opts.intensity ?? 1 },
     uFlare: { value: opts.flare ?? .22 },
-    uCore: { value: new THREE.Color(opts.core ?? 0xf2fbff) },
-    uEdge: { value: new THREE.Color(opts.edge ?? 0x2e9fd8) },
+    uCore: { value: new THREE.Color(opts.core ?? 0xeaf6ff) },
+    uEdge: { value: new THREE.Color(opts.edge ?? 0x1470a8) },
     uSteps: { value: opts.steps ?? 26 },
   };
   const mat = new THREE.ShaderMaterial({
@@ -145,7 +147,7 @@ export function createPlume(opts = {}) {
     fragmentShader: FRAG,
     uniforms,
     transparent: true,
-    blending: THREE.AdditiveBlending,
+    blending: THREE.NormalBlending,
     depthWrite: false,
     side: THREE.DoubleSide,
   });
@@ -155,6 +157,7 @@ export function createPlume(opts = {}) {
   mesh.frustumCulled = false;
   mesh.renderOrder = 5;
 
+  // 复用向量：热路径零分配
   const camWorld = new THREE.Vector3();
   return {
     mesh, uniforms,
@@ -163,7 +166,7 @@ export function createPlume(opts = {}) {
     tick(camera, t) {
       uniforms.uTime.value = t;
       camera.getWorldPosition(camWorld);
-      uniforms.uCamObj.value.copy(mesh.worldToLocal(camWorld.clone()));
+      uniforms.uCamObj.value.copy(mesh.worldToLocal(camWorld));
     },
   };
 }

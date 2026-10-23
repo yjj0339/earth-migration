@@ -14,11 +14,12 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 export function buildPost(renderer, scene, camera, quality = 'high') {
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
+  // 浅色场景：阈值 1.0 —— 只有 HDR>1 的发光体产生泛光，白底不过曝
   const bloom = new UnrealBloomPass(
     new THREE.Vector2(innerWidth, innerHeight),
-    quality === 'high' ? .7 : .45,   // strength
-    quality === 'high' ? .5 : .35,   // radius
-    .82                              // threshold
+    quality === 'high' ? .4 : .3,   // strength
+    quality === 'high' ? .5 : .35,  // radius
+    1.0                             // threshold
   );
   if (quality === 'high') composer.addPass(bloom);
   const output = new OutputPass();

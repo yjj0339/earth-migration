@@ -74,32 +74,33 @@ async function boot() {
   };
   const yieldFrame = () => new Promise(r => setTimeout(r, 16));
 
-  setStep(4, 'SPINNING UP RENDERER');
+  setStep(4, '正在启动渲染器');
   await yieldFrame();
   initRenderer();
 
-  setStep(14, 'SYNTHESIZING PLANET SURFACE');
+  setStep(14, '正在合成行星表面');
   await yieldFrame();
-  const maps = makeEarthMaps(isMobile ? 768 : 1024, isMobile ? 384 : 512);
+  const maps = makeEarthMaps(isMobile ? 1024 : 2048, isMobile ? 512 : 1024);
   W._landData = null; // 陆地掩码懒查询用（从 day canvas 采样）
 
-  setStep(46, 'BUILDING STARFIELDS');
+  setStep(46, '正在绘制星图');
   await yieldFrame();
   const moonMap = makeMoonMap();
 
-  setStep(58, 'ASSEMBLING MEGASTRUCTURES');
+  setStep(58, '正在装配巨构');
   await yieldFrame();
   buildScene(maps, moonMap);
 
-  setStep(84, 'COMPILING SHADERS');
+  setStep(84, '正在编译着色器');
   await yieldFrame();
   scene.traverse(o => { if (o.material) o.material.needsUpdate = true; });
   renderer.compile(scene, camera);
   // 第一帧真实渲染作为编译完成信号
   renderer.setAnimationLoop(null);
-  renderFrame(0);
+  renderFrame(0, 0);
 
-  setStep(100, 'READY');
+
+  setStep(100, '就绪');
   await yieldFrame();
   window.__boot.started = true;
   $('loading').style.opacity = '0';
@@ -112,13 +113,13 @@ function initRenderer() {
     canvas: $('gl'), antialias: !isMobile, powerPreference: 'high-performance',
     logarithmicDepthBuffer: true,
   });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, S.quality === 'high' ? 2 : 1.25));
+  applyDRSLevel();
   renderer.setSize(innerWidth, innerHeight);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.12;
+  renderer.toneMappingExposure = 1.0;
 
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x010208);
+  scene.background = new THREE.Color(0xe9f2f8);   // 晨光星图浅底
   camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, .1, 1.2e5);
   camera.position.set(210, 90, 260);
 
@@ -131,11 +132,46 @@ function initRenderer() {
 
   composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
-  bloomPass = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), .62, .55, .78);
+  // 浅色场景：阈值 1.0 —— 只有 HDR>1 的发光体（喷口/恒星）产生泛光，白底不过曝
+  bloomPass = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), .38, .5, 1.0);
   if (S.quality === 'high') composer.addPass(bloomPass);
   composer.addPass(new OutputPass());
 
-  aerial = createAerial(scene, { color: 0x0a1e33, density: .0009 });
+  aerial = createAerial(scene, { color: 0xcfe4f0, density: .0008 });
+
+  // —— 稳定性：WebGL 上下文丢失/恢复 ——
+  const cvs = renderer.domElement;
+  cvs.addEventListener('webglcontextlost', (e) => {
+    e.preventDefault();
+    renderer.setAnimationLoop(null);
+    toast('图形上下文丢失，正在恢复…');
+  });
+  cvs.addEventListener('webglcontextrestored', () => {
+    renderer.setAnimationLoop(safeAnimate);
+    toast('图形已恢复');
+  });
+}
+
+/* —— 自适应分辨率（DRS）：帧率低自动降 pixelRatio，流畅后试探回升 —— */
+const DRS_LEVELS = [2, 1.6, 1.3, 1.05];
+let drsIdx = Math.min(3, +(localStorage.getItem('em-drs') || 0)) || 0;
+function applyDRSLevel() {
+  renderer.setPixelRatio(Math.min(devicePixelRatio, DRS_LEVELS[drsIdx]));
+  composer && composer.setSize(innerWidth, innerHeight);
+}
+const DRS = { acc: 0, n: 0, cool: 0 };
+function drsUpdate(dt) {
+  DRS.acc += dt; DRS.n++;
+  if (DRS.acc < 1.5) return;
+  const fps = DRS.n / DRS.acc;
+  DRS.acc = 0; DRS.n = 0;
+  if (fps < 42 && drsIdx < 3) {
+    drsIdx++; localStorage.setItem('em-drs', drsIdx); applyDRSLevel();
+  } else if (fps > 57 && drsIdx > 0 && DRS.cool <= 0) {
+    drsIdx--; localStorage.setItem('em-drs', drsIdx); applyDRSLevel();
+    DRS.cool = 3;
+  }
+  if (DRS.cool > 0) DRS.cool -= 1.5;
 }
 
 /* 陆地判定：采样 day canvas 像素（蓝占优 = 海洋） */
@@ -160,36 +196,36 @@ function latLonDir(latDeg, lonDeg) {
 }
 
 function buildScene(maps, moonCanvas) {
-  /* —— 灯光 —— */
-  const sun = new THREE.DirectionalLight(0xfff3e0, 2.4);
+  /* —— 灯光（浅色宇宙：暖白主光 + 提亮环境） —— */
+  const sun = new THREE.DirectionalLight(0xfff6e8, 2.6);
   sun.position.set(1e4, 300, 800);
   scene.add(sun);
   W.sunLight = sun;
-  scene.add(new THREE.HemisphereLight(0x8ab8d8, 0x0a121e, .35));
+  scene.add(new THREE.HemisphereLight(0xd8ecf8, 0xc8d8e4, 1.1));
 
-  /* —— 星空 / 天幕 —— */
-  W.stars = makeStarfield(isMobile ? 3200 : 6400, 3.1e4);
+  /* —— 星空 / 天幕（浅色星图风） —— */
+  W.stars = makeStarfield(isMobile ? 3200 : 6400, 3.1e4, 11, true);
   scene.add(W.stars);
-  W.sky = makeSkyDome();
+  W.sky = makeSkyDome(21, true);
   scene.add(W.sky);
 
-  /* —— 太阳精灵 —— */
+  /* —— 太阳精灵（普通混合暖阳盘） —— */
   const sunCanvas = document.createElement('canvas');
   sunCanvas.width = sunCanvas.height = 256;
   {
     const c = sunCanvas.getContext('2d');
     const g = c.createRadialGradient(128, 128, 0, 128, 128, 128);
-    g.addColorStop(0, 'rgba(255,250,235,1)');
-    g.addColorStop(.18, 'rgba(255,225,160,.95)');
-    g.addColorStop(.4, 'rgba(255,160,60,.42)');
-    g.addColorStop(1, 'rgba(255,120,30,0)');
+    g.addColorStop(0, 'rgba(255,252,240,1)');
+    g.addColorStop(.2, 'rgba(255,222,150,.96)');
+    g.addColorStop(.45, 'rgba(250,166,70,.5)');
+    g.addColorStop(1, 'rgba(246,140,50,0)');
     c.fillStyle = g; c.fillRect(0, 0, 256, 256);
   }
   const sunTex = new THREE.CanvasTexture(sunCanvas);
   sunTex.colorSpace = THREE.SRGBColorSpace;
   W.sunSprite = new THREE.Sprite(new THREE.SpriteMaterial({
-    map: sunTex, color: 0xffe9c0, transparent: true, depthWrite: false, fog: false,
-    blending: THREE.AdditiveBlending,
+    map: sunTex, color: 0xffe2ae, transparent: true, depthWrite: false, fog: false,
+    blending: THREE.NormalBlending,
   }));
   W.sunSprite.position.set(2.4e4, 800, 1600);
   W.sunSprite.scale.setScalar(3400);
@@ -250,8 +286,8 @@ function buildScene(maps, moonCanvas) {
 
         // 晨昏线暖染
         float dusk = exp(-abs(ndl) * 9.0);
-        vec3 col = day * (dayAmt * 1.28 + .015);
-        col += day * dusk * vec3(1.0, .45, .18) * .55;
+        vec3 col = day * (dayAmt * 1.42 + .035);
+        col += day * dusk * vec3(1.0, .45, .18) * .5;
 
         // 云（昼夜分明）
         vec3 cloudCol = mix(vec3(.05,.07,.10), vec3(1.02), dayAmt);
@@ -274,10 +310,10 @@ function buildScene(maps, moonCanvas) {
         #include <colorspace_fragment>
       }`,
   });
-  W.earth = new THREE.Mesh(new THREE.SphereGeometry(EARTH_R, isMobile ? 72 : 128, isMobile ? 48 : 96), earthMat);
+  W.earth = new THREE.Mesh(new THREE.SphereGeometry(EARTH_R, isMobile ? 96 : 160, isMobile ? 64 : 112), earthMat);
   earthGroup.add(W.earth);
 
-  W.atmos = createAtmosphere({ radius: EARTH_R * 1.035, strength: 1.2 });
+  W.atmos = createAtmosphere({ radius: EARTH_R * 1.035, strength: 1.05, rayleigh: 0x3d95c4, mie: 0xd8813c });
   earthGroup.add(W.atmos.mesh);
 
   /* —— 行星发动机网络 —— */
@@ -340,13 +376,13 @@ function buildEngineNetwork(dayCanvas, earthGroup) {
   W.towers = kit.build(M);
   earthGroup.add(W.towers);
 
-  /* 实例化远场光束（一次 draw call） */
+  /* 实例化远场光束（一次 draw call；普通混合：浅底上的深青光束） */
   const beamGeo = new THREE.CylinderGeometry(.22, 1, 1, 10, 1, true);
   beamGeo.translate(0, .5, 0);
   const beamMat = new THREE.ShaderMaterial({
     uniforms: {
       uTime: { value: 0 }, uPower: { value: 0 },
-      uCore: { value: new THREE.Color(0xe8f8ff) }, uEdge: { value: new THREE.Color(0x2e9fd8) },
+      uCore: { value: new THREE.Color(0xffffff) }, uEdge: { value: new THREE.Color(0x1173ab) },
     },
     vertexShader: /* glsl */`
       #include <common>
@@ -368,12 +404,12 @@ function buildEngineNetwork(dayCanvas, earthGroup) {
       void main() {
         float edge = pow(abs(dot(normalize(vN), normalize(vV))), 1.6); // 中心更亮
         float flick = .82 + .18 * sin(uTime * 7.0 + vH * 14.0);
-        float a = (1.0 - vH) * edge * uPower * flick;
+        float a = (1.0 - vH * .82) * edge * uPower * flick * .78;
         vec3 c = mix(uCore, uEdge, vH);
-        gl_FragColor = vec4(c * a * 1.6, a);
+        gl_FragColor = vec4(c, a);
         #include <logdepthbuf_fragment>
       }`,
-    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+    transparent: true, depthWrite: false, blending: THREE.NormalBlending, side: THREE.DoubleSide,
   });
   const allSites = sites.concat(cluster);
   const beams = new THREE.InstancedMesh(beamGeo, beamMat, allSites.length);
@@ -399,20 +435,21 @@ function buildEngineNetwork(dayCanvas, earthGroup) {
   });
   glowGeo.setAttribute('position', new THREE.BufferAttribute(gp, 3));
   const glowMat = new THREE.PointsMaterial({
-    color: 0x9fdcff, size: 2.6, sizeAttenuation: true,
-    transparent: true, opacity: .85, blending: THREE.AdditiveBlending, depthWrite: false, fog: false,
+    color: 0x1173ab, size: 2.6, sizeAttenuation: true,
+    transparent: true, opacity: .7, blending: THREE.NormalBlending, depthWrite: false, fog: false,
   });
   W.glowPts = new THREE.Points(glowGeo, glowMat);
   W.glowPts.renderOrder = 6;
   earthGroup.add(W.glowPts);
 
-  /* 集群 017 真体积光柱（19 根 ray-march） */
+  /* 集群 017 真体积光柱（19 根 ray-march，浅色光束配色） */
   if (S.quality === 'high') {
     for (const [la, lo] of cluster) {
       const dir = latLonDir(la, lo);
       const pl = createPlume({
         radius: 1.05, height: 64 + rng(la + lo)() * 30,
-        intensity: 1.5, flare: .5, steps: 20,
+        intensity: 1.7, flare: .5, steps: 24,
+        core: 0xffffff, edge: 0x1073ad,
       });
       pl.mesh.position.copy(dir).multiplyScalar(EARTH_R - .5);
       pl.mesh.quaternion.setFromUnitVectors(up, dir);
@@ -421,7 +458,7 @@ function buildEngineNetwork(dayCanvas, earthGroup) {
       if (i_mod3(la, lo)) {
         const sm = createSmoke({
           count: 26, birth: 2.4, rise: 7, spread: 5, size: 26,
-          color: 0xa8c4d8, opacity: .16, rate: .05,
+          color: 0x7fa3ba, opacity: .18, rate: .05,
         });
         sm.points.position.copy(dir).multiplyScalar(EARTH_R - .5);
         sm.points.quaternion.setFromUnitVectors(up, dir);
@@ -681,11 +718,11 @@ function buildDeepSpaceArray() {
   grp.rotation.set(.3, .8, .1);
   scene.add(grp);
   W.dsArray = grp;
-  // 激光上行（细 additive 线）
+  // 激光上行（细线，普通混合深青）
   const laserGeo = new THREE.CylinderGeometry(.12, .12, 6000, 5, 1, true);
   laserGeo.translate(0, 3000, 0);
   const laser = new THREE.Mesh(laserGeo, new THREE.MeshBasicMaterial({
-    color: 0x7fdcff, transparent: true, opacity: .3, blending: THREE.AdditiveBlending, depthWrite: false, fog: false,
+    color: 0x1173ab, transparent: true, opacity: .4, blending: THREE.NormalBlending, depthWrite: false, fog: false,
   }));
   laser.position.copy(grp.position);
   laser.lookAt(1e4, 0, 0);
@@ -723,15 +760,15 @@ function buildFleet() {
    3. 地标系统
    ═══════════════════════════════════════════════════════════ */
 const LANDMARKS = [
-  { key: '1', name: 'EARTH · 地球总览', focus: new THREE.Vector3(0, 0, 0), dist: 420, cam: [260, 120, 300] },
-  { key: '2', name: 'ENGINE ARRAY 017 · 发动机集群', get focusDir() { return latLonDir(24, 40); }, dist: 46, lat: 24, lon: 40 },
-  { key: '3', name: 'EQUATORIAL STEERING · 赤道转向阵列', focusDir: latLonDir(0, 200), dist: 60, lat: 0, lon: 200 },
-  { key: '4', name: 'EQUATORIAL ANCHOR · 电梯锚点', focusDir: latLonDir(0, 22), dist: 26, lat: 0, lon: 22 },
-  { key: '5', name: 'TIANSHU APEX · 天枢空间站', world: () => W.apex.getWorldPosition(new THREE.Vector3()), dist: 36 },
-  { key: '6', name: 'AURORA RING · 极光号居住环', world: () => W.auroraRing.getWorldPosition(new THREE.Vector3()), dist: 55 },
-  { key: '7', name: 'KUIPER-7 · 采矿平台', world: () => W.kuiper.getWorldPosition(new THREE.Vector3()), dist: 70 },
-  { key: '8', name: 'DEEP SPACE ARRAY · 深空阵列', world: () => W.dsArray.getWorldPosition(new THREE.Vector3()), dist: 80 },
-  { key: '9', name: 'LUNA · 月球', world: () => W.moon.getWorldPosition(new THREE.Vector3()), dist: 90 },
+  { key: '1', name: '地球总览', full: 'EARTH · 地球总览', focus: new THREE.Vector3(0, 0, 0), dist: 420, cam: [260, 120, 300] },
+  { key: '2', name: '发动机集群 017', full: 'ENGINE ARRAY 017 · 发动机集群', get focusDir() { return latLonDir(24, 40); }, dist: 46, lat: 24, lon: 40 },
+  { key: '3', name: '赤道转向阵列', full: 'EQUATORIAL STEERING · 赤道转向阵列', focusDir: latLonDir(0, 200), dist: 60, lat: 0, lon: 200 },
+  { key: '4', name: '电梯锚点', full: 'EQUATORIAL ANCHOR · 电梯锚点', focusDir: latLonDir(0, 22), dist: 26, lat: 0, lon: 22 },
+  { key: '5', name: '天枢空间站', full: 'TIANSHU APEX · 天枢空间站', world: () => W.apex.getWorldPosition(new THREE.Vector3()), dist: 36 },
+  { key: '6', name: '极光号居住环', full: 'AURORA RING · 极光号居住环', world: () => W.auroraRing.getWorldPosition(new THREE.Vector3()), dist: 55 },
+  { key: '7', name: 'KUIPER-7 采矿平台', full: 'KUIPER-7 · 采矿平台', world: () => W.kuiper.getWorldPosition(new THREE.Vector3()), dist: 70 },
+  { key: '8', name: '深空通信阵列', full: 'DEEP SPACE ARRAY · 深空阵列', world: () => W.dsArray.getWorldPosition(new THREE.Vector3()), dist: 80 },
+  { key: '9', name: '月球', full: 'LUNA · 月球', world: () => W.moon.getWorldPosition(new THREE.Vector3()), dist: 90 },
 ];
 
 function landmarkWorldPos(lm) {
@@ -746,15 +783,19 @@ function buildLabels() {
   LANDMARKS.forEach((lm, i) => {
     const el = document.createElement('div');
     el.className = 'holo';
-    el.innerHTML = `<div class="ring"></div><div class="dia"></div><div class="tag">${lm.name.split('·')[0].trim()}</div>`;
+    el.innerHTML = `<div class="ring"></div><div class="dia"></div><div class="tag">${lm.name}</div>`;
     el.addEventListener('click', () => flyToLandmark(i));
     box.appendChild(el);
     lm.el = el;
   });
 }
 
-function updateLabels() {
-  if (!S.hudVisible || S.mode === 'film') { LANDMARKS.forEach(l => l.el.style.display = 'none'); return; }
+let labelAcc = 0;
+function updateLabels(dt) {
+  labelAcc += dt;
+  if (labelAcc < .066) return;
+  labelAcc = 0;
+  if (!S.hudVisible || S.mode === 'film') { LANDMARKS.forEach(l => l.el && (l.el.style.display = 'none')); return; }
   const v = new THREE.Vector3();
   const camPos = camera.position;
   for (const lm of LANDMARKS) {
@@ -804,7 +845,7 @@ function flyToLandmark(i, then) {
     l0: controls.target.clone(), l1: target,
     then,
   };
-  S.focusName = lm.name.split('·')[0].trim();
+  S.focusName = lm.name;
   setMode('explore', true);
   toast(S.focusName);
 }
@@ -816,8 +857,8 @@ const CHAPTERS = [
   {
     title: 'The Dying Sun', titleZh: '垂死的太阳', era: '2061', dur: 10,
     lines: [
-      { t: 0.6, kicker: 'CHAPTER 01 · 2061', title: '太阳正在急剧膨胀', sub: 'HELIOS EXPANSION · 100 年内将吞没地球轨道' },
-      { t: 5.0, kicker: 'UEG EMERGENCY SESSION', title: '人类做出了选择', sub: '带着地球离开太阳系 —— 前往 4.37 光年外的比邻星' },
+      { t: 0.6, kicker: '第一章 · 2061', title: '太阳正在急剧膨胀', sub: '氦闪迫近 · 一百年内将吞没地球轨道' },
+      { t: 5.0, kicker: '联合政府紧急会议', title: '人类做出了选择', sub: '带着地球离开太阳系 —— 前往 4.37 光年外的比邻星' },
     ],
     shots: [
       { t: 0, dur: 5.2, from: [620, 180, 520], to: [430, 120, 360], look: [0, 0, 0], fov: 42 },
@@ -829,8 +870,8 @@ const CHAPTERS = [
   {
     title: 'Ignition', titleZh: '点火', era: '第 0 年', dur: 12,
     lines: [
-      { t: 0.8, kicker: 'CHAPTER 02 · YEAR 0', title: '点火', sub: '一万零二百四十四台行星发动机 · 逐洲点亮' },
-      { t: 6.4, kicker: 'GLOBAL IGNITION', title: '重聚变引擎全功率', sub: '150 亿吨推力 · 地球开始移动' },
+      { t: 0.8, kicker: '第二章 · 第 0 年', title: '点火', sub: '一万零二百四十四台行星发动机 · 逐洲点亮' },
+      { t: 6.4, kicker: '全球点火', title: '重聚变引擎全功率', sub: '150 亿吨推力 · 地球开始移动' },
     ],
     shots: [
       { t: 0, dur: 5.6, from: [-160, 90, 340], to: [-120, 60, 190], look: [0, 40, 0], fov: 55, nightSide: true, local: true },
@@ -846,8 +887,8 @@ const CHAPTERS = [
   {
     title: 'Turning the World', titleZh: '刹住地球', era: '第 0 年 · 第 3 天', dur: 10,
     lines: [
-      { t: 0.8, kicker: 'CHAPTER 03 · DAY 3', title: '赤道转向发动机启动', sub: 'EQUATORIAL STEERING ARRAY · 切向推力 5,000,000 MN' },
-      { t: 5.6, kicker: 'ROTATION BRAKING', title: '地球停止了自转', sub: '45 亿年来的第一次 · 一半人类进入永昼，一半坠入永夜' },
+      { t: 0.8, kicker: '第三章 · 第 3 天', title: '赤道转向发动机启动', sub: '赤道转向阵列 · 切向推力 5,000,000 MN' },
+      { t: 5.6, kicker: '自转制动', title: '地球停止了自转', sub: '45 亿年来的第一次 · 一半人类进入永昼，一半坠入永夜' },
     ],
     shots: [
       { t: 0, dur: 5, from: [180, 26, 60], to: [60, 22, 190], look: [0, 0, 0], fov: 58, local: true },
@@ -862,8 +903,8 @@ const CHAPTERS = [
   {
     title: 'The Space Elevator', titleZh: '太空电梯', era: '第 1 年', dur: 10,
     lines: [
-      { t: 0.8, kicker: 'CHAPTER 04 · YEAR 1', title: '太空电梯', sub: '沿 36,000 公里缆绳攀升 · 0.0°N 22.0°E 锚点' },
-      { t: 5.4, kicker: 'GEOSYNCHRONOUS ORBIT', title: '天枢空间站', sub: '双反向旋转重力环 · 0.92 G · 轨道物流枢纽' },
+      { t: 0.8, kicker: '第四章 · 第 1 年', title: '太空电梯', sub: '沿 36,000 公里缆绳攀升 · 锚点 0.0°N 22.0°E' },
+      { t: 5.4, kicker: '同步轨道', title: '天枢空间站', sub: '双反向旋转重力环 · 0.92 G · 轨道物流枢纽' },
     ],
     shots: [
       { t: 0, dur: 4.4, from: [0, 104, 30], to: [26, 140, 8], look: [0, 120, 0], fov: 62, local: true, elevator: true },
@@ -875,8 +916,8 @@ const CHAPTERS = [
   {
     title: 'Jupiter', titleZh: '木星', era: '第 17 年', dur: 11,
     lines: [
-      { t: 0.8, kicker: 'CHAPTER 05 · YEAR 17', title: '木星引力弹弓', sub: 'GRAVITY ASSIST · 借巨行星引力甩出太阳系' },
-      { t: 6.2, kicker: 'SLINGSHOT', title: '木星加速窗口', sub: '地球掠过近日点扰动区 · 速度提升至 47 KM/S' },
+      { t: 0.8, kicker: '第五章 · 第 17 年', title: '木星引力弹弓', sub: '引力弹弓 · 借巨行星引力甩出太阳系' },
+      { t: 6.2, kicker: '借力加速', title: '木星加速窗口', sub: '地球掠过近日点扰动区 · 速度提升至 47 KM/S' },
     ],
     shots: [
       { t: 0, dur: 5.4, from: [-2600, 500, 1600], to: [-3100, 420, 1250], look: [-4200, 260, 2300], fov: 44 },
@@ -888,8 +929,8 @@ const CHAPTERS = [
   {
     title: 'The Long Night', titleZh: '长夜', era: '第 2500 年', dur: 11,
     lines: [
-      { t: 0.8, kicker: 'CHAPTER 06 · YEAR 2500', title: '漫长的黑夜', sub: '地表 -87°C · 三十五亿人转入地下城' },
-      { t: 6.0, kicker: 'STILL BURNING', title: '发动机仍在燃烧', sub: '航程 82% · 目标：比邻星 · 还需一百代人' },
+      { t: 0.8, kicker: '第六章 · 第 2500 年', title: '漫长的黑夜', sub: '地表 -87°C · 三十五亿人转入地下城' },
+      { t: 6.0, kicker: '仍在燃烧', title: '发动机仍在燃烧', sub: '航程 82% · 目标：比邻星 · 还需一百代人' },
     ],
     shots: [
       { t: 0, dur: 5.4, from: [-300, -80, 420], to: [-220, -40, 320], look: [0, 0, 0], fov: 46, nightSide: true },
@@ -916,7 +957,7 @@ const Film = {
     for (const c of CHAPTERS) { delete c._shocked; delete c._shocked2; delete c._ended; }
     CHAPTERS[idx].enter();
     setChapterCard(idx, true);
-    $('f-play').textContent = 'PAUSE';
+    $('f-play').textContent = '暂停';
     AFX.setChapter(idx);
     controls.enabled = false;
     saveExploreCam();
@@ -947,7 +988,7 @@ const Film = {
     if (this.chLocal >= ch.dur) {
       setChapterCard(this.chIdx, false);
       this.chIdx++;
-      if (this.chIdx >= CHAPTERS.length) { this.exit(); toast('JOURNEY COMPLETE · 任务继续，自由探索'); return; }
+      if (this.chIdx >= CHAPTERS.length) { this.exit(); toast('影片播完 · 任务继续，自由探索'); return; }
       this.chLocal = 0;
       CHAPTERS[this.chIdx].enter();
       setChapterCard(this.chIdx, true);
@@ -1051,12 +1092,12 @@ function buildFilmUI() {
   $('f-next').addEventListener('click', () => Film.seekChapter(Film.chIdx + 1));
   $('f-play').addEventListener('click', togglePlay);
   $('f-exit').addEventListener('click', () => Film.exit());
-  $('f-sound').addEventListener('click', () => { S.audioOn = !S.audioOn; AFX.master(S.audioOn); $('f-sound').textContent = S.audioOn ? 'SOUND ON' : 'SOUND OFF'; });
+  $('f-sound').addEventListener('click', () => { S.audioOn = !S.audioOn; AFX.master(S.audioOn); $('f-sound').textContent = S.audioOn ? '声音开' : '声音关'; });
 }
 function togglePlay() {
   if (S.mode !== 'film') return;
   Film.playing = !Film.playing;
-  $('f-play').textContent = Film.playing ? 'PAUSE' : 'PLAY';
+  $('f-play').textContent = Film.playing ? '暂停' : '播放';
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1120,7 +1161,7 @@ const CINE = {
       .add(new THREE.Vector3(0, dist * .28, 0));
     camera.position.lerp(pos, Math.min(1, dt * 1.6));
     controls.target.lerp(target, Math.min(1, dt * 1.4));
-    S.focusName = lm.name.split('·')[0].trim();
+    S.focusName = lm.name;
   },
 };
 
@@ -1133,7 +1174,7 @@ function setMode(m, silent) {
   if (m === 'cinematic') CINE.t = 0;
   if (m === 'film') { Film.start(0); syncModeButtons(); return; }
   syncModeButtons();
-  if (!silent) toast(m === 'cinematic' ? 'CINEMATIC CRUISE · 电影巡航' : m === 'fp' ? 'FIRST PERSON · WASD 移动 / E 升 / Q 降' : 'EXPLORE · 自由探索');
+  if (!silent) toast(m === 'cinematic' ? '电影巡航 · 自动环游全部地标' : m === 'fp' ? '第一人称 · WASD 移动 / E 升 / Q 降' : '自由探索 · 拖拽环绕地球 · 按 J 观看影片');
 }
 function syncModeButtons() {
   document.querySelectorAll('.dock-modes button').forEach(b => {
@@ -1161,9 +1202,12 @@ function initOrbitSVG() {
   svgEscapePath = document.getElementById('svg-escape');
   svgEscapeLen = svgEscapePath.getTotalLength();
 }
-let hudT = 0;
+let hudT = 0, hudAcc = 0;
 function updateHUD(dt) {
-  hudT += dt;
+  // 节流：面板 10Hz 已足够顺滑，省下每帧 DOM 写入
+  hudAcc += dt;
+  if (hudAcc < .1) return;
+  hudT += hudAcc; hudAcc = 0;
   const w = (x) => Math.sin(hudT * 1.7 + x * 2.1) * .5 + .5;
   S.missionDays += dt * (S.mode === 'film' ? 400 : S.simDaysPerSec);
 
@@ -1178,7 +1222,7 @@ function updateHUD(dt) {
   $('orb-dist').textContent = distAU + ' AU';
   const speed = (S.enginePower > .5 ? 30 + S.enginePower * 17 + w(2) * .6 : 29.8).toFixed(1);
   $('orb-speed').textContent = speed + ' KM/S';
-  $('orb-phase').textContent = S.mode === 'film' ? FILM_PHASES[Film.chIdx] : (S.enginePower > .1 ? 'ESCAPE BURN' : 'STANDBY');
+  $('orb-phase').textContent = S.mode === 'film' ? FILM_PHASES[Film.chIdx] : (S.enginePower > .1 ? '逃逸加速' : '待命');
   const lonDeg = (Math.atan2(camera.position.z, camera.position.x) / DEG + 360) % 360;
   const latDeg = Math.asin(camera.position.y / camera.position.length()) / DEG;
   $('orb-lon').textContent = lonDeg.toFixed(1) + '°';
@@ -1219,24 +1263,24 @@ function updateHUD(dt) {
   $('elv-tension').textContent = (9.2 + w(8) * .6).toFixed(2) + ' MN';
   const nextM = 59 - (hudT % 60);
   $('elv-next').textContent = `T-${String(Math.floor(nextM / 60)).padStart(2, '0')}:${String(Math.floor(nextM % 60)).padStart(2, '0')}`;
-  $('elv-traffic').textContent = Math.round(34 + w(9) * 8) + ' crafts/day';
+  $('elv-traffic').textContent = Math.round(34 + w(9) * 8) + ' 艘/日';
 
   // system-panel
   const jupD = Math.max(0, 6205 - S.missionDays);
-  $('sys-jup').textContent = jupD > 0 ? `T-${Math.round(jupD).toLocaleString()} D` : 'PASSED';
+  $('sys-jup').textContent = jupD > 0 ? `T-${Math.round(jupD).toLocaleString()} 天` : '已飞掠';
   $('sys-flux').textContent = (Math.max(4, 100 - prog * 96) + w(10) * .5).toFixed(1) + '%';
   $('sys-luna').textContent = (0.97 + w(11) * .02).toFixed(2);
   $('sys-prog').textContent = (prog * 100).toFixed(2) + '%';
 
   // cam-panel
-  $('cam-mode').textContent = S.mode === 'film' ? 'CINEMATIC' : S.mode.toUpperCase();
+  $('cam-mode').textContent = ({ film: '影片运镜', cinematic: '电影巡航', explore: '自由探索', fp: '第一人称' })[S.mode] || S.mode;
   $('cam-focus').textContent = S.focusName;
   $('cam-alt').textContent = Math.max(0, (camera.position.length() - EARTH_R) / KM).toLocaleString('en-US', { maximumFractionDigits: 0 }) + ' KM';
   const fd = camera.position.distanceTo(controls.target);
   $('cam-dist').textContent = (fd / KM).toLocaleString('en-US', { maximumFractionDigits: 0 }) + ' KM';
   $('cam-fps').textContent = S.fps.toFixed(0);
 }
-const FILM_PHASES = ['STANDBY', 'ESCAPE BURN', 'ROTATION BRAKE', 'GEOSYNC OPS', 'JUPITER ASSIST', 'CRUISE'];
+const FILM_PHASES = ['待命', '逃逸加速', '自转制动', '同步轨道作业', '木星借力', '巡航'];
 
 /* ═══════════════════════════════════════════════════════════
    7. 生成式配乐（纯 Web Audio）
@@ -1373,8 +1417,8 @@ function bindUI() {
   const marks = $('dock-marks');
   LANDMARKS.forEach((lm, i) => {
     const b = document.createElement('button');
-    b.textContent = `${lm.key} ${lm.name.split(' ')[0]}`;
-    b.title = lm.name;
+    b.textContent = `${lm.key}·${lm.name}`;
+    b.title = lm.full;
     b.addEventListener('click', () => flyToLandmark(i));
     marks.appendChild(b);
   });
@@ -1401,13 +1445,13 @@ function bindUI() {
     else if (e.code === 'KeyH') {
       S.hudVisible = !S.hudVisible;
       $('app').classList.toggle('nohud', !S.hudVisible);
-      toast(S.hudVisible ? 'HUD ON' : 'HUD OFF');
+      toast(S.hudVisible ? '面板已显示' : '面板已隐藏');
     } else if (e.code === 'KeyG') {
       S.quality = S.quality === 'high' ? 'low' : 'high';
-      renderer.setPixelRatio(Math.min(devicePixelRatio, S.quality === 'high' ? 2 : 1.1));
+      renderer.setPixelRatio(Math.min(devicePixelRatio, S.quality === 'high' ? DRS_LEVELS[drsIdx] : 1.1));
       bloomPass.enabled = S.quality === 'high';
-      for (const p of W.plumes) p.setSteps(S.quality === 'high' ? 20 : 10);
-      toast('FX QUALITY · ' + S.quality.toUpperCase());
+      for (const p of W.plumes) p.setSteps(S.quality === 'high' ? 24 : 10);
+      toast('特效档 · ' + (S.quality === 'high' ? '高' : '低'));
     } else if (e.code === 'Escape' && S.mode === 'fp') setMode('explore');
     else if (/^Digit[1-9]$/.test(e.code)) {
       flyToLandmark(+e.code.slice(5) - 1);
@@ -1466,7 +1510,7 @@ function bindUI() {
     $('title-screen').style.visibility = 'hidden';
     $('app').classList.remove('hidden');
     S.enginePower = .87; S.earthSpin = .004;
-    toast('EXPLORE · 拖拽环绕地球 · 按 J 观看影片');
+    toast('自由探索 · 拖拽环绕地球 · 按 J 观看影片');
     syncModeButtons();
   });
 }
@@ -1487,9 +1531,9 @@ function buildPickMap() {
 /* ═══════════════════════════════════════════════════════════
    9. 主循环
    ═══════════════════════════════════════════════════════════ */
-function renderFrame(t) {
+function renderFrame(t, dt) {
   // 地球自转
-  W.earthGroup.rotation.y += S.earthSpin * (S.mode === 'film' && Film.chIdx >= 2 ? 1 : 1) * 1;
+  W.earthGroup.rotation.y += S.earthSpin;
   // 着色器时钟
   const em = W.earth.material.uniforms;
   em.uTime.value = t;
@@ -1500,49 +1544,48 @@ function renderFrame(t) {
   // 发动机系统
   const p = S.enginePower;
   if (W.beams) W.beams.material.uniforms.uPower.value = p;
-  if (W.glowPts) W.glowPts.material.opacity = p * .9;
-  for (const pl of W.plumes) { pl.setIntensity(.25 + p * 1.6); pl.tick(camera, t); }
+  if (W.glowPts) W.glowPts.material.opacity = p * .7;
+  for (const pl of W.plumes) { pl.setIntensity(.25 + p * 1.75); pl.tick(camera, t); }
   for (const sm of W.smokes) sm.tick(t);
-  W.shock.update(1 / 60);
-  W.shock2.update(1 / 60);
+  W.shock.update(dt);
+  W.shock2.update(dt);
   if (W.steerBeams) W.steerBeams.material.uniforms.uPower.value = (S.steerPower || 0);
 
   // 攀爬器
   for (const c of W.climbers) {
     const u = c.userData;
-    u.phase += 1 / 60 / 70 * (u.up ? 1 : 1.25);
+    u.phase += dt / 70 * (u.up ? 1 : 1.25);
     const ph = u.phase % 1;
-    const y = EARTH_R + 6 + (GEO_R - EARTH_R - 14) * (u.up ? ph : 1 - ph);
-    c.position.y = y;
+    c.position.y = EARTH_R + 6 + (GEO_R - EARTH_R - 14) * (u.up ? ph : 1 - ph);
     const near = Math.min(ph, 1 - ph) < .06;
     c.visible = !near;
   }
   // 旋转环
-  if (W.apexRingA) { W.apexRingA.rotation.y += .35 / 60; W.apexRingB.rotation.y -= .5 / 60; }
-  if (W.auroraRing) W.auroraRing.rotation.y += .12 / 60;
+  if (W.apexRingA) { W.apexRingA.rotation.y += .35 * dt; W.apexRingB.rotation.y -= .5 * dt; }
+  if (W.auroraRing) W.auroraRing.rotation.y += .12 * dt;
 
   // 月球轨道
-  W.moon.userData.orbit += 1 / 60 * .008;
+  W.moon.userData.orbit += dt * .008;
   const mo = W.moon.userData.orbit;
   W.moon.position.set(Math.cos(mo) * MOON_D, 60, Math.sin(mo) * MOON_D);
 
   // 舰队漂移
   for (const s of W.fleet) {
-    s.userData.phase += 1 / 60 * s.userData.drift;
+    s.userData.phase += dt * s.userData.drift;
     s.position.y += Math.sin(s.userData.phase) * .01;
-    s.rotation.y += s.userData.drift * .2 / 60;
+    s.rotation.y += s.userData.drift * .2 * dt;
   }
 
   // 垂死太阳视觉
   const sw = S.sunSwollen;
   W.sunSprite.scale.setScalar(3400 * (1 + sw * 2.6));
-  W.sunSprite.material.color.setHSL(.08 - sw * .05, sw * .85, .78 - sw * .12);
-  W.sunLight.intensity = 2.4 - sw * 1.15;
-  W.sunLight.color.setHSL(.09 - sw * .045, .35 + sw * .55, .82 - sw * .1);
+  W.sunSprite.material.color.setHSL(.08 - sw * .05, sw * .7, .8 - sw * .1);
+  W.sunLight.intensity = 2.6 - sw * 1.2;
+  W.sunLight.color.setHSL(.09 - sw * .04, .3 + sw * .5, .86 - sw * .08);
 
   // 模式
   if (flyTween) {
-    flyTween.t += 1 / 60;
+    flyTween.t += dt;
     const k = ease(Math.min(1, flyTween.t / flyTween.dur));
     camera.position.lerpVectors(flyTween.p0, flyTween.p1, k);
     controls.target.lerpVectors(flyTween.l0, flyTween.l1, k);
@@ -1554,16 +1597,16 @@ function renderFrame(t) {
     if (camera.position.length() < minR) camera.position.setLength(minR);
   } else if (S.mode === 'cinematic') {
     controls.enabled = false;
-    CINE.update(1 / 60);
+    CINE.update(dt);
     controls.enabled = true;
   } else if (S.mode === 'fp') {
-    FP.update(1 / 60);
+    FP.update(dt);
   }
 
   // 大气雾随高度
-  aerial.update(camera.position, new THREE.Vector3(0, 0, 0), EARTH_R, .0018);
+  aerial.update(camera.position, new THREE.Vector3(0, 0, 0), EARTH_R, .0016);
 
-  updateLabels();
+  updateLabels(dt);
 }
 
 let frameCount = 0, fpsT = 0;
@@ -1571,20 +1614,44 @@ function animate() {
   const dt = Math.min(.05, clock.getDelta());
   const t = clock.elapsedTime;
   if (S.mode === 'film') Film.update(dt);
-  renderFrame(t);
+  renderFrame(t, dt);
   updateHUD(dt);
   AFX.setRumble && AFX.ctx && AFX.setRumble(S.enginePower * (S.mode === 'film' ? 1 : .55));
   composer.render();
 
   frameCount++; fpsT += dt;
   if (fpsT >= .5) { S.fps = frameCount / fpsT; frameCount = 0; fpsT = 0; }
+  drsUpdate(dt);
 }
+
+/* 渲染循环防护：单帧异常不炸整个体验，连续 3 次才停机报告 */
+let errStreak = 0;
+function safeAnimate() {
+  try { animate(); errStreak = 0; }
+  catch (e) {
+    console.error('[render]', e);
+    if (++errStreak >= 3) {
+      renderer.setAnimationLoop(null);
+      toast('渲染异常 · 已切换安全模式');
+      bloomPass.enabled = false;
+      renderer.setAnimationLoop(safeAnimate);
+      errStreak = 0;
+    }
+  }
+}
+
+/* 可见性：离开页面暂停声音，回来丢弃积压帧 */
+document.addEventListener('visibilitychange', () => {
+  if (!clock) return;
+  if (document.hidden) { AFX.ctx && AFX.masterOn(false); }
+  else { clock.getDelta(); AFX.ctx && AFX.masterOn(S.audioOn); }
+});
 
 /* ═══════════ 启动 ═══════════ */
 boot().then(() => {
   buildPickMap();
   bindUI();
-  renderer.setAnimationLoop(animate);
+  renderer.setAnimationLoop(safeAnimate);
 }).catch(err => {
   const m = document.getElementById('boot-fault-msg');
   document.getElementById('boot-fault').style.display = 'block';

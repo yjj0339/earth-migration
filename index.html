@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#02040a">
-<title>The Earth Migration Project · 地球迁移计划</title>
+<meta name="theme-color" content="#eef5fa">
+<title>地球迁移计划 · 带着地球去流浪</title>
 <meta name="description" content="献给《流浪地球》的电影级交互式 WebGL 体验：上万台行星发动机推动地球离开太阳系，前往比邻星。同人作品，非官方关联。">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='22' fill='%23061426' stroke='%237fdcff' stroke-width='3'/><path d='M32 6 L38 16 L26 16 Z' fill='%23ffb46a'/><circle cx='32' cy='32' r='8' fill='%237fdcff'/></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='22' fill='%23eef5fa' stroke='%230f6c8e' stroke-width='3'/><path d='M32 6 L38 16 L26 16 Z' fill='%23b26a1a'/><circle cx='32' cy='32' r='8' fill='%230f6c8e'/></svg>">
 <link rel="stylesheet" href="css/app.css">
 <script src="boot.js"></script>
 <script type="importmap">
@@ -24,28 +24,29 @@
 <div id="loading">
   <div class="load-core">
     <div class="load-emblem"><div class="load-planet"></div><div class="load-beam"></div></div>
-    <div class="load-title">THE EARTH MIGRATION PROJECT</div>
-    <div class="load-sub">HUMANITY'S LAST JOURNEY · 4.37 LIGHT-YEARS · 2,500 YEARS</div>
+    <div class="load-title">地球迁移计划</div>
+    <div class="load-sub">人类最后的旅程 · 4.37 光年 · 2500 年</div>
     <div class="load-track"><div id="load-bar"></div></div>
-    <div class="load-row"><span id="load-step">INITIALIZING</span><span id="load-pct">0%</span></div>
-    <div class="load-row dim"><span>UEG · PLANETARY PROPULSION COMMAND</span><span>UNET/2071.44</span></div>
+    <div class="load-row"><span id="load-step">正在初始化</span><span id="load-pct">0%</span></div>
+    <div class="load-row dim"><span>联合政府 · 行星推进司令部</span><span>UNET/2071.44</span></div>
   </div>
-  <div id="boot-fault"><div class="fault-head">SYSTEM FAULT</div><div id="boot-fault-msg"></div></div>
+  <div id="boot-fault"><div class="fault-head">系统故障</div><div id="boot-fault-msg"></div></div>
 </div>
 
 <!-- ══════════ 启动屏 ══════════ -->
 <div id="title-screen" class="hidden">
   <div class="ts-stars"></div>
   <div class="ts-core">
-    <div class="ts-kicker">A TRIBUTE TO THE WANDERING EARTH · 同人致敬作品</div>
+    <div class="ts-kicker">致敬《流浪地球》· 同人作品</div>
+    <div class="ts-title-zh">地 球 迁 移 计 划</div>
     <h1 class="ts-title">THE EARTH<br>MIGRATION PROJECT</h1>
-    <div class="ts-tag">地球迁移计划 · 带着地球去流浪</div>
+    <div class="ts-tag">带着地球去流浪</div>
     <div class="ts-quote">“人类第一次，把家园本身变成了飞船。”</div>
     <div class="ts-actions">
-      <button id="btn-start" class="ts-btn primary">▶&ensp;ENTER MISSION · 进入任务</button>
-      <a id="btn-beyond" class="ts-btn ghost" href="beyond.html">II&ensp;· BEYOND THE WANDERING EARTH →</a>
+      <button id="btn-start" class="ts-btn primary">进入任务</button>
+      <a id="btn-beyond" class="ts-btn ghost" href="beyond.html">第二部 · 流浪地球之外 →</a>
     </div>
-    <div class="ts-hints">DRAG 环绕 · SCROLL 缩放 · 1–9 地标 · C 巡航 · F 第一人称 · J 影片 · H 隐藏界面</div>
+    <div class="ts-hints">拖拽环绕 · 滚轮缩放 · 数字键 1–9 跳地标 · C 巡航 · F 第一人称 · J 影片 · H 隐藏界面</div>
   </div>
   <div class="ts-foot">非官方同人作品 · 受《流浪地球》启发 · THREE.JS r170 / WEBGL2</div>
 </div>
@@ -59,18 +60,18 @@
   <div id="hud">
 
     <div class="panel" id="title-block">
-      <div class="pb-ueg">UEG · PLANETARY PROPULSION COMMAND</div>
-      <div class="pb-name">THE EARTH MIGRATION PROJECT</div>
-      <div class="pb-row"><span class="k">MISSION</span><span class="v mono" id="mission-clock">T+0000 D</span></div>
-      <div class="pb-row"><span class="k">UTC</span><span class="v mono" id="utc-clock">--:--:--</span></div>
+      <div class="pb-ueg">联合政府 · 行星推进司令部</div>
+      <div class="pb-name">地球迁移计划</div>
+      <div class="pb-row"><span class="k">任务时钟</span><span class="v mono" id="mission-clock">T+0000 D</span></div>
+      <div class="pb-row"><span class="k">协调世界时</span><span class="v mono" id="utc-clock">--:--:--</span></div>
     </div>
 
     <div class="panel" id="orbit-panel">
-      <div class="panel-head">ORBITAL POSITION <i></i></div>
+      <div class="panel-head">轨道位置 <i></i></div>
       <div class="grid2">
         <div class="cell"><span class="k">日心距离</span><span class="v mono" id="orb-dist">0.98 AU</span></div>
         <div class="cell"><span class="k">速度</span><span class="v mono" id="orb-speed">29.8 KM/S</span></div>
-        <div class="cell"><span class="k">阶段</span><span class="v mono amber" id="orb-phase">ESCAPE BURN</span></div>
+        <div class="cell"><span class="k">阶段</span><span class="v mono amber" id="orb-phase">逃逸加速</span></div>
         <div class="cell"><span class="k">自转角</span><span class="v mono" id="orb-rot">0.0°</span></div>
         <div class="cell"><span class="k">黄经</span><span class="v mono" id="orb-lon">0.0°</span></div>
         <div class="cell"><span class="k">黄纬</span><span class="v mono" id="orb-lat">0.0°</span></div>
@@ -78,22 +79,22 @@
       <svg id="orbit-svg" viewBox="0 0 200 130" aria-hidden="true">
         <defs>
           <radialGradient id="svg-sun" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stop-color="#ffdf9e"/><stop offset="45%" stop-color="#ff9d3c"/><stop offset="100%" stop-color="#3a1c05"/>
+            <stop offset="0%" stop-color="#ffdf9e"/><stop offset="45%" stop-color="#f2952f"/><stop offset="100%" stop-color="#c86a12"/>
           </radialGradient>
         </defs>
         <circle cx="24" cy="65" r="9" fill="url(#svg-sun)"/>
-        <circle cx="24" cy="65" r="15" fill="none" stroke="#ffb46a" stroke-opacity=".25"/>
-        <ellipse cx="24" cy="65" rx="70" ry="58" fill="none" stroke="#7fdcff" stroke-opacity=".35" stroke-dasharray="3 4"/>
-        <ellipse cx="24" cy="65" rx="126" ry="96" fill="none" stroke="#7fdcff" stroke-opacity=".22" stroke-dasharray="3 4"/>
-        <path id="svg-escape" d="M88 30 C 110 18, 150 30, 176 72" fill="none" stroke="#ffb46a" stroke-width="1.4" stroke-dasharray="5 3"/>
-        <circle id="svg-jup" cx="150" cy="45" r="3.4" fill="#d8a56a"/>
-        <circle id="svg-earth" cx="88" cy="30" r="2.8" fill="#7fdcff"/>
-        <text x="120" y="14" fill="#7fdcff" font-size="7" letter-spacing="1.5" opacity=".8">TRAJECTORY · JUPITER ASSIST</text>
+        <circle cx="24" cy="65" r="15" fill="none" stroke="#b26a1a" stroke-opacity=".35"/>
+        <ellipse cx="24" cy="65" rx="70" ry="58" fill="none" stroke="#4d87a5" stroke-opacity=".55" stroke-dasharray="3 4"/>
+        <ellipse cx="24" cy="65" rx="126" ry="96" fill="none" stroke="#4d87a5" stroke-opacity=".35" stroke-dasharray="3 4"/>
+        <path id="svg-escape" d="M88 30 C 110 18, 150 30, 176 72" fill="none" stroke="#b26a1a" stroke-width="1.6" stroke-dasharray="5 3"/>
+        <circle id="svg-jup" cx="150" cy="45" r="3.4" fill="#9a6a33"/>
+        <circle id="svg-earth" cx="88" cy="30" r="2.9" fill="#0f6c8e"/>
+        <text x="112" y="12" fill="#4d6e82" font-size="7" letter-spacing="1.2">木星借力 · 逃逸轨迹</text>
       </svg>
     </div>
 
     <div class="panel" id="engine-panel">
-      <div class="panel-head">PLANETARY ENGINES <i></i></div>
+      <div class="panel-head">行星发动机 <i></i></div>
       <div class="eng-main">
         <div class="eng-pct mono" id="eng-pct">0.0<span class="unit">%</span></div>
         <div class="eng-gauge" id="eng-gauge"></div>
@@ -101,44 +102,44 @@
       <div class="grid2">
         <div class="cell"><span class="k">活动单位</span><span class="v mono" id="eng-units">0 / 10,244</span></div>
         <div class="cell"><span class="k">总推力</span><span class="v mono" id="eng-thrust">0.0 GT</span></div>
-        <div class="cell"><span class="k">核心温度</span><span class="v mono" id="eng-temp">0 K</span></div>
+        <div class="cell"><span class="k">核心温度</span><span class="v mono" id="eng-temp">300 K</span></div>
         <div class="cell"><span class="k">燃料储备</span><span class="v mono" id="eng-fuel">100.0%</span></div>
       </div>
       <div class="eng-continents" id="eng-continents"></div>
     </div>
 
     <div class="panel" id="elevator-panel">
-      <div class="panel-head">SPACE ELEVATOR <i></i></div>
+      <div class="panel-head">太空电梯 <i></i></div>
       <div class="grid2">
         <div class="cell"><span class="k">锚点</span><span class="v mono">0.0°N 22.0°E</span></div>
-        <div class="cell"><span class="k">天枢站</span><span class="v mono cyan" id="elv-status">APEX GEOSYNC</span></div>
+        <div class="cell"><span class="k">天枢站</span><span class="v mono cyan" id="elv-status">同步轨道</span></div>
         <div class="cell"><span class="k">上行攀爬器</span><span class="v mono" id="elv-up">0</span></div>
         <div class="cell"><span class="k">下行攀爬器</span><span class="v mono" id="elv-down">0</span></div>
         <div class="cell"><span class="k">缆绳张力</span><span class="v mono" id="elv-tension">0 MN</span></div>
         <div class="cell"><span class="k">下一班次</span><span class="v mono" id="elv-next">--:--</span></div>
-        <div class="cell wide"><span class="k">轨道流量</span><span class="v mono" id="elv-traffic">0 crafts/day</span></div>
+        <div class="cell wide"><span class="k">轨道流量</span><span class="v mono" id="elv-traffic">0 艘/日</span></div>
       </div>
     </div>
 
     <div class="panel" id="system-panel">
-      <div class="panel-head">PLANETARY SYSTEM <i></i></div>
+      <div class="panel-head">行星系统 <i></i></div>
       <div class="grid2">
-        <div class="cell wide"><span class="k">目的地</span><span class="v mono cyan">PROXIMA CEN · 4.24 LY</span></div>
-        <div class="cell"><span class="k">木星遭遇</span><span class="v mono amber" id="sys-jup">T-6,205 D</span></div>
+        <div class="cell wide"><span class="k">目的地</span><span class="v mono cyan">比邻星 · 4.24 光年</span></div>
+        <div class="cell"><span class="k">木星遭遇</span><span class="v mono amber" id="sys-jup">T-6,205 天</span></div>
         <div class="cell"><span class="k">太阳通量</span><span class="v mono" id="sys-flux">100.0%</span></div>
-        <div class="cell"><span class="k">月伴飞</span><span class="v mono" id="sys-luna">0.97</span></div>
+        <div class="cell"><span class="k">月球伴飞</span><span class="v mono" id="sys-luna">0.97</span></div>
         <div class="cell"><span class="k">航程完成</span><span class="v mono" id="sys-prog">0.00%</span></div>
       </div>
     </div>
 
     <div class="panel" id="cam-panel">
-      <div class="panel-head">OBSERVER <i></i></div>
+      <div class="panel-head">观察者 <i></i></div>
       <div class="grid2">
-        <div class="cell wide"><span class="k">模式</span><span class="v mono" id="cam-mode">EXPLORE</span></div>
-        <div class="cell wide"><span class="k">焦点</span><span class="v mono" id="cam-focus">EARTH</span></div>
+        <div class="cell wide"><span class="k">模式</span><span class="v mono" id="cam-mode">自由探索</span></div>
+        <div class="cell wide"><span class="k">焦点</span><span class="v mono" id="cam-focus">地球</span></div>
         <div class="cell"><span class="k">高度</span><span class="v mono" id="cam-alt">0 KM</span></div>
         <div class="cell"><span class="k">距离</span><span class="v mono" id="cam-dist">0 KM</span></div>
-        <div class="cell"><span class="k">FPS</span><span class="v mono" id="cam-fps">60</span></div>
+        <div class="cell"><span class="k">帧率</span><span class="v mono" id="cam-fps">60</span></div>
       </div>
     </div>
   </div>
@@ -146,15 +147,15 @@
   <!-- 底部 dock -->
   <div id="dock">
     <div class="dock-hints">
-      <span>DRAG 环绕</span><span>SCROLL 缩放</span><span>CLICK 标记飞抵</span><span>1–9 地标</span><span>H 隐藏 HUD</span><span>G 特效档</span>
+      <span>拖拽 环绕</span><span>滚轮 缩放</span><span>点击标记 飞抵</span><span>1–9 地标</span><span>H 隐藏面板</span><span>G 特效档</span>
     </div>
     <div class="dock-marks" id="dock-marks"></div>
     <div class="dock-modes">
-      <button id="btn-c" data-mode="cinematic">C · CINEMATIC</button>
-      <button id="btn-o" data-mode="explore" class="on">O · EXPLORE</button>
-      <button id="btn-f" data-mode="fp">F · FIRST PERSON</button>
-      <button id="btn-j" data-mode="journey">J · ▶ JOURNEY</button>
-      <a class="dock-beyond" href="beyond.html">II · BEYOND →</a>
+      <button id="btn-c" data-mode="cinematic">C · 电影巡航</button>
+      <button id="btn-o" data-mode="explore" class="on">O · 自由探索</button>
+      <button id="btn-f" data-mode="fp">F · 第一人称</button>
+      <button id="btn-j" data-mode="journey">J · ▶ 影片</button>
+      <a class="dock-beyond" href="beyond.html">第二部 · 之外 →</a>
     </div>
   </div>
 
@@ -162,16 +163,16 @@
   <div id="film" class="hidden">
     <div class="letterbox top"></div>
     <div class="letterbox bottom"></div>
-    <div id="chapter-card"><div id="ch-num">01</div><div id="ch-title">The Dying Sun</div><div id="ch-era">2061</div></div>
+    <div id="chapter-card"><div id="ch-num">01</div><div id="ch-title">垂死的太阳</div><div id="ch-era">2061</div></div>
     <div id="subtitle"><div id="sub-kicker"></div><div id="sub-title"></div><div id="sub-sub"></div></div>
     <div id="film-bar">
       <button id="f-prev" title="上一章">◀◀</button>
-      <button id="f-play" title="播放/暂停">PAUSE</button>
+      <button id="f-play" title="播放/暂停">暂停</button>
       <button id="f-next" title="下一章">▶▶</button>
       <div id="f-track"><div id="f-prog"></div><div id="f-ticks"></div></div>
       <span class="mono" id="f-time">00:00 / 01:02</span>
-      <button id="f-sound" title="声音">SOUND ON</button>
-      <button id="f-exit" title="退出">EXIT</button>
+      <button id="f-sound" title="声音">声音开</button>
+      <button id="f-exit" title="退出">退出</button>
     </div>
   </div>
 

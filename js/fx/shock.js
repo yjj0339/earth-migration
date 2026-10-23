@@ -18,7 +18,7 @@ void main() {
   float a = rim * uOpacity * (1.0 - uProg);
   a *= smoothstep(0.0, .12, uProg);            // 起始瞬间最亮后衰减
   a *= 1.0 - smoothstep(.55, 1.0, uProg) * .9; // 末期消散
-  gl_FragColor = vec4(uColor * (1.4 + uProg), a);
+  gl_FragColor = vec4(uColor, a);              // 普通混合：白底上的深青冲击穹
   #include <logdepthbuf_fragment>
 }
 `;
@@ -45,9 +45,9 @@ void main() {
   // ring uv.y: 内0 外1 → 环带随进度外扩、变淡
   float band = smoothstep(0.0, .25, vUv.y) * (1.0 - smoothstep(.55, 1.0, vUv.y));
   float head = 1.0 - smoothstep(.0, .35, abs(vUv.y - .78)); // 尘埃锋面
-  float a = (band * .45 + head * .8) * uOpacity * (1.0 - uProg);
+  float a = (band * .5 + head * .95) * uOpacity * (1.0 - uProg);
   a *= smoothstep(0.0, .07, uProg);
-  gl_FragColor = vec4(uColor * (1.2 + head), a);
+  gl_FragColor = vec4(uColor, a);
   #include <logdepthbuf_fragment>
 }
 `;
@@ -73,7 +73,7 @@ export class Shockwave {
     this.domeUniforms = {
       uProg: { value: 0 },
       uOpacity: { value: opts.opacity ?? .9 },
-      uColor: { value: new THREE.Color(opts.color ?? 0xcfe8ff) },
+      uColor: { value: new THREE.Color(opts.color ?? 0x1a6da8) },
     };
     const dome = new THREE.Mesh(
       new THREE.SphereGeometry(1, 40, 24, 0, Math.PI * 2, 0, Math.PI / 2),
@@ -81,7 +81,7 @@ export class Shockwave {
         vertexShader: BASIC_VERT, fragmentShader: DOME_FRAG,
         uniforms: this.domeUniforms,
         transparent: true, depthWrite: false, side: THREE.DoubleSide,
-        blending: THREE.AdditiveBlending,
+        blending: THREE.NormalBlending,
       })
     );
     dome.renderOrder = 7;
@@ -90,8 +90,8 @@ export class Shockwave {
 
     this.ringUniforms = {
       uProg: { value: 0 },
-      uOpacity: { value: (opts.opacity ?? .9) * .8 },
-      uColor: { value: new THREE.Color(opts.dustColor ?? 0xd8c9a8) },
+      uOpacity: { value: (opts.opacity ?? .9) * .85 },
+      uColor: { value: new THREE.Color(opts.dustColor ?? 0xb98a4e) },
     };
     const ring = new THREE.Mesh(
       new THREE.RingGeometry(.4, 1, 64, 1),

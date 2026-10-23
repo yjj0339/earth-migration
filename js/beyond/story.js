@@ -46,7 +46,7 @@ export const CHAPTERS = [
   {
     title: 'The Wandering Earth', zh: '流浪地球', era: '2078 · 1 AU', dur: 30,
     lines: [
-      { t: .6, k: 'CHAPTER 01 · 2078', ti: '全球点火倒计时', s: 'GLOBAL IGNITION SEQUENCE · 10,000 台重聚变发动机' },
+      { t: .6, k: '第一章 · 2078', ti: '全球点火倒计时', s: '全球点火序列 · 10,000 台重聚变发动机' },
       { t: 12.5, k: 'IGNITION', ti: '点火', s: '尾随半球逐台点亮 · 150 亿吨推力' },
       { t: 22, k: 'ESCAPE BURN', ti: '地球启程', s: '第一次变轨机动 · 离开原轨道' },
     ],
@@ -62,7 +62,7 @@ export const CHAPTERS = [
   {
     title: 'The Solar System', zh: '太阳系', era: '2079–2093 · 1→10 AU', dur: 35,
     lines: [
-      { t: .6, k: 'CHAPTER 02 · 2079', ti: '穿越太阳系', s: '木星与土星之间 · 时间压缩启动' },
+      { t: .6, k: '第二章 · 2079', ti: '穿越太阳系', s: '木星与土星之间 · 时间压缩启动' },
       { t: 14, k: 'JUPITER FLYBY', ti: '木星借力', s: 'GRAVITY ASSIST · 第二次加速窗口' },
       { t: 26, k: 'SATURN', ti: '土星环面交叉', s: 'RING PLANE CROSSING · 冰晶环带' },
     ],
@@ -76,7 +76,7 @@ export const CHAPTERS = [
   {
     title: 'Beyond the Outer Planets', zh: '超越外行星', era: '2101–2156 · 30→120 AU', dur: 30,
     lines: [
-      { t: .6, k: 'CHAPTER 03 · 2101', ti: '柯伊伯带', s: '冥王星与阋神星之间 · 太阳已成一颗亮星' },
+      { t: .6, k: '第三章 · 2101', ti: '柯伊伯带', s: '冥王星与阋神星之间 · 太阳已成一颗亮星' },
       { t: 15, k: 'HELIOPAUSE', ti: '日球层顶', s: '离开太阳的势力范围 · 太阳风在此终结' },
     ],
     shots: [
@@ -88,7 +88,7 @@ export const CHAPTERS = [
   {
     title: 'Interstellar Voyage', zh: '星际航行', era: '2160–2580 · 0.002→1.6 LY', dur: 35,
     lines: [
-      { t: .6, k: 'CHAPTER 04 · 2160', ti: '星际介质', s: '弓形激波稳定 · 地球成为一颗暗星' },
+      { t: .6, k: '第四章 · 2160', ti: '星际介质', s: '弓形激波稳定 · 地球成为一颗暗星' },
       { t: 16, k: 'DEEP FIELD', ti: '深空航行', s: '极光在冰封的夜空起舞 · 地下城灯火如星' },
     ],
     shots: [
@@ -100,7 +100,7 @@ export const CHAPTERS = [
   {
     title: 'The Milky Way', zh: '银河系', era: '猎户臂 · 距银心 26,700 LY', dur: 25,
     lines: [
-      { t: .6, k: 'CHAPTER 05', ti: '银河', s: '太阳位于人马臂与英仙臂之间的猎户臂' },
+      { t: .6, k: '第五章', ti: '银河', s: '太阳位于人马臂与英仙臂之间的猎户臂' },
       { t: 13, k: 'GALACTIC VIEW', ti: '四条旋臂', s: '尘埃带 · 恒星形成区 · 球状星团 · 麦哲伦云' },
     ],
     shots: [
@@ -112,7 +112,7 @@ export const CHAPTERS = [
   {
     title: 'A New Sun', zh: '新的太阳', era: '4578 · 比邻星 4.37 LY', dur: 19,
     lines: [
-      { t: .6, k: 'CHAPTER 06 · 4578', ti: '减速点火', s: 'DECELERATION BURN · 发动机调转朝向新家园' },
+      { t: .6, k: '第六章 · 4578', ti: '减速点火', s: '减速点火 · 发动机调转朝向新家园' },
       { t: 10, k: 'PROXIMA CENTAURI', ti: '抵达比邻星', s: '2,500 年 · 一百代人的旅程 · 新的太阳升起' },
     ],
     shots: [

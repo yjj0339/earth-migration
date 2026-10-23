@@ -43,13 +43,13 @@ export const DESTS = [
 ];
 
 export const LADDER = [
-  { name: 'PLANET', km: 1e5 },
-  { name: 'ORBIT', km: 4e4 * 63.7 },
+  { name: '行星', km: 1e5 },
+  { name: '轨道空间', km: 4e4 * 63.7 },
   { name: '1 AU', km: 1.496e8 },
-  { name: 'HELIOPAUSE', km: 1.8e10 },
-  { name: '1 LIGHT-YEAR', km: 9.461e12 },
-  { name: 'LOCAL ARM', km: 1e17 },
-  { name: 'MILKY WAY', km: 9.461e20 },
+  { name: '日球层顶', km: 1.8e10 },
+  { name: '1 光年', km: 9.461e12 },
+  { name: '本地臂', km: 1e17 },
+  { name: '银河系', km: 9.461e20 },
 ];
 
 export class Dash {
@@ -94,7 +94,7 @@ export class Dash {
   }
 
   buildSpeed(onSpeed) {
-    const modes = ['REAL TIME', '1 YR : 25 S', '1 YR : 3 S', 'TIME-LAPSE'];
+    const modes = ['实时', '1 年 : 25 秒', '1 年 : 3 秒', '延时'];
     this.speedBtns = [];
     modes.forEach((m, i) => {
       const b = document.createElement('button');

@@ -82,52 +82,57 @@ export function makeEarthMaps(w = 1024, h = 512, seed = 42) {
     for (let x = 0; x < w; x++) {
       const u = x / w;
       const i = (y * w + x) * 4;
-      // 大陆形状：fbm 域扭曲
+      // 大陆形状：fbm 域扭曲 + 脊线分量（海岸更破碎自然）
       const wx = N.fbm(u * 6, v * 3, 4) * 1.7;
       const wy = N.fbm(u * 6 + 5.2, v * 3 + 1.3, 4) * 1.7;
-      const c01 = N.fbm(u * 5 + wx, v * 2.5 + wy, 6);
+      const base = N.fbm(u * 5 + wx, v * 2.5 + wy, 6);
+      const ridge = 1 - Math.abs(N.fbm(u * 9 + 2, v * 4.5 + 7, 4) * 2 - 1); // 脊线
+      const c01 = base * .82 + ridge * ridge * .24;
       const land = c01 > .523;
-      const coast = Math.abs(c01 - .523) < .02;
+      const coast = Math.abs(c01 - .523) < .018;
 
       let r, g, b;
       if (land) {
         const elev = (c01 - .523) / .477;
         const veg = N.fbm(u * 11 + 3, v * 7 + 8, 5);
         // 苔原 → 植被 → 荒漠 → 山地
-        if (veg > .62) { r = 168 + veg * 40; g = 140 + veg * 50; b = 96 + veg * 30; }
-        else if (veg > .45) { r = 52 + elev * 30; g = 92 + elev * 40; b = 48; }
-        else { r = 88 + veg * 60; g = 96 + veg * 40; b = 70; }
+        if (veg > .62) { r = 172 + veg * 38; g = 144 + veg * 48; b = 98 + veg * 28; }
+        else if (veg > .45) { r = 50 + elev * 34; g = 96 + elev * 44; b = 46; }
+        else { r = 150 + veg * 58; g = 150 + veg * 40; b = 118 + veg * 30; }
         // 高海拔雪
-        if (elev > .55) { const s = (elev - .55) / .45; r += (225 - r) * s; g += (230 - g) * s; b += (238 - b) * s; }
+        if (elev > .52) { const s = (elev - .52) / .48; r += (228 - r) * s; g += (233 - g) * s; b += (240 - b) * s; }
       } else {
         const dep = Math.min(1, (.523 - c01) / .3);
-        r = 14 + (1 - dep) * 26; g = 40 + (1 - dep) * 40; b = 78 + (1 - dep) * 55;
-        if (coast) { r += 26; g += 30; b += 22; }
+        r = 20 + (1 - dep) * 30; g = 62 + (1 - dep) * 46; b = 108 + (1 - dep) * 66;
+        if (coast) { r += 30; g += 34; b += 24; }
       }
       // 极冠（海陆均冰封）
-      const iceEdge = .78 + N.vnoise(u * 9, v * 6) * .14;
+      const iceEdge = .76 + N.vnoise(u * 9, v * 6) * .16;
       if (polar > iceEdge) {
         const s = Math.min(1, (polar - iceEdge) / .08);
-        r += (232 - r) * s; g += (242 - g) * s; b += (250 - b) * s;
+        r += (238 - r) * s; g += (246 - g) * s; b += (251 - b) * s;
       }
       dd[i] = r; dd[i + 1] = g; dd[i + 2] = b; dd[i + 3] = 255;
 
-      // 夜灯：陆地 × 集群噪声 × 中低纬
+      // 夜灯：陆地 × 集群噪声 × 中低纬（双层密度更细腻）
       const cluster = lights.fbm(u * 13, v * 7, 4);
       let L = 0;
       if (land && polar < iceEdge - .04 && polar < .72) {
-        if (cluster > .585) {
-          const dot = lights.vnoise(u * 90, v * 46);
-          L = Math.max(0, (dot - .3)) * (cluster - .585) * 6;
+        if (cluster > .575) {
+          const dot1 = lights.vnoise(u * 130, v * 66);
+          const dot2 = lights.vnoise(u * 260 + 40, v * 130 + 9);
+          const dens = (cluster - .575) * 7;
+          L = Math.max(0, (dot1 - .26) * dens + (dot2 - .38) * dens * .6);
         }
       }
-      nd[i] = Math.min(255, L * 255); nd[i + 1] = Math.min(255, L * 205); nd[i + 2] = Math.min(255, L * 130); nd[i + 3] = 255;
+      nd[i] = Math.min(255, L * 255); nd[i + 1] = Math.min(255, L * 208); nd[i + 2] = Math.min(255, L * 126); nd[i + 3] = 255;
 
-      // 云：拉伸 fbm 条带
-      const cl = N.fbm(u * 7 + N.fbm(u * 3, v * 6, 3) * 2.2, v * 9, 5);
-      const cv = Math.max(0, (cl - .5)) * 2.2;
+      // 云：拉伸 fbm 条带 × 双频（主带 + 碎云）
+      const cwarp = N.fbm(u * 3, v * 6, 3) * 2.2;
+      const cl = N.fbm(u * 7 + cwarp, v * 9, 5) * .68 + N.fbm(u * 15 + 3, v * 18 + 5, 4) * .32;
+      const cv = Math.max(0, (cl - .5)) * 2.35;
       cd[i] = cd[i + 1] = cd[i + 2] = 255;
-      cd[i + 3] = Math.min(255, cv * 255 * .85);
+      cd[i + 3] = Math.min(255, cv * 255 * .88);
     }
   }
   day.putImageData(dImg, 0, 0); night.putImageData(nImg, 0, 0); cloud.putImageData(cImg, 0, 0);
@@ -212,15 +217,14 @@ export function makeSunMap(w = 512, h = 256, seed = 3) {
   return c;
 }
 
-/* ---------- 星空 ---------- */
-export function makeStarfield(count = 6000, radius = 3e4, seed = 11) {
+/* ---------- 星空（浅色星图风：白底深青点 / 深色模式：加法亮星） ---------- */
+export function makeStarfield(count = 6000, radius = 3e4, seed = 11, light = true) {
   const rand = rng(seed);
   const pos = new Float32Array(count * 3);
   const col = new Float32Array(count * 3);
   const size = new Float32Array(count);
   const c = new THREE.Color();
   for (let i = 0; i < count; i++) {
-    // 均匀球面
     const u = rand() * 2 - 1, th = rand() * Math.PI * 2;
     const s = Math.sqrt(1 - u * u);
     pos[i * 3] = Math.cos(th) * s * radius;
@@ -229,9 +233,16 @@ export function makeStarfield(count = 6000, radius = 3e4, seed = 11) {
     const mag = Math.pow(rand(), 3.2);
     size[i] = .5 + mag * 2.6;
     const temp = rand();
-    if (temp > .85) c.setHSL(.58, .5, .8);
-    else if (temp > .7) c.setHSL(.08, .6, .75);
-    else c.setHSL(.6, .08, .7 + mag * .3);
+    if (light) {
+      // 星图美学：深青墨为主 + 少量暖橙亮星
+      if (temp > .93) c.setHSL(.08, .62, .38);
+      else if (temp > .86) c.setHSL(.58, .34, .30);
+      else c.setHSL(.55, .22, .16 + mag * .22);
+    } else {
+      if (temp > .85) c.setHSL(.58, .5, .8);
+      else if (temp > .7) c.setHSL(.08, .6, .75);
+      else c.setHSL(.6, .08, .7 + mag * .3);
+    }
     col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
   }
   const geo = new THREE.BufferGeometry();
@@ -264,7 +275,8 @@ export function makeStarfield(count = 6000, radius = 3e4, seed = 11) {
         gl_FragColor = vec4(vCol, a);
         #include <logdepthbuf_fragment>
       }`,
-    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    transparent: true, depthWrite: false,
+    blending: light ? THREE.NormalBlending : THREE.AdditiveBlending,
   });
   mat.fog = false;
   const pts = new THREE.Points(geo, mat);
@@ -273,20 +285,33 @@ export function makeStarfield(count = 6000, radius = 3e4, seed = 11) {
   return pts;
 }
 
-/* ---------- 银河带天幕（近黑球幕 + 淡银河带） ---------- */
-export function makeSkyDome(seed = 21) {
+/* ---------- 银河带天幕（浅色：白底淡青云雾带 / 深色：暗底亮带） ---------- */
+export function makeSkyDome(seed = 21, light = true) {
   const N = makeNoise(seed);
   const [c, ctx] = canvas2d(1024, 512);
-  ctx.fillStyle = '#010208'; ctx.fillRect(0, 0, 1024, 512);
+  if (light) {
+    ctx.fillStyle = '#eef5fa'; ctx.fillRect(0, 0, 1024, 512);
+  } else {
+    ctx.fillStyle = '#010208'; ctx.fillRect(0, 0, 1024, 512);
+  }
   const img = ctx.getImageData(0, 0, 1024, 512), d = img.data;
   for (let y = 0; y < 512; y++) for (let x = 0; x < 1024; x++) {
     const i = (y * 1024 + x) * 4;
     const band = Math.exp(-Math.pow((y / 512 - .46), 2) * 26);
     const n = N.fbm(x / 1024 * 7, y / 512 * 5, 5);
-    const glow = Math.max(0, band * (n - .42)) * 1.5;
-    d[i] = Math.min(255, 6 + glow * 120);
-    d[i + 1] = Math.min(255, 8 + glow * 96);
-    d[i + 2] = Math.min(255, 16 + glow * 70);
+    if (light) {
+      // 白底上的银河带 = 淡青灰云雾 + 深尘点（星图美学）
+      const cloud = Math.max(0, band * (n - .38)) * 1.6;
+      const dust = Math.max(0, band * (n - .62)) * 1.5;
+      d[i] = Math.max(0, 238 - cloud * 36 - dust * 52);
+      d[i + 1] = Math.max(0, 245 - cloud * 30 - dust * 58);
+      d[i + 2] = Math.max(0, 250 - cloud * 18 - dust * 60);
+    } else {
+      const glow = Math.max(0, band * (n - .42)) * 1.5;
+      d[i] = Math.min(255, 6 + glow * 120);
+      d[i + 1] = Math.min(255, 8 + glow * 96);
+      d[i + 2] = Math.min(255, 16 + glow * 70);
+    }
     d[i + 3] = 255;
   }
   ctx.putImageData(img, 0, 0);

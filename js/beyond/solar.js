@@ -55,15 +55,15 @@ export class L1Solar {
     const coronaTex = new THREE.CanvasTexture(coronaCanvas);
     coronaTex.colorSpace = THREE.SRGBColorSpace;
     this.corona = new THREE.Sprite(new THREE.SpriteMaterial({
-      map: coronaTex, color: 0xffc890, transparent: true, depthWrite: false, fog: false,
-      blending: THREE.AdditiveBlending, opacity: .95,
+      map: coronaTex, color: 0xffb867, transparent: true, depthWrite: false, fog: false,
+      blending: THREE.NormalBlending, opacity: .95,
     }));
     this.corona.scale.setScalar(52);
     g.add(this.corona);
     // CME 脉球
     this.cme = new THREE.Sprite(new THREE.SpriteMaterial({
-      map: coronaTex, color: 0xff9350, transparent: true, depthWrite: false, fog: false,
-      blending: THREE.AdditiveBlending, opacity: 0,
+      map: coronaTex, color: 0xf08a3c, transparent: true, depthWrite: false, fog: false,
+      blending: THREE.NormalBlending, opacity: 0,
     }));
     this.cme.scale.setScalar(70);
     this.cme.position.set(6, 4, 2);
@@ -80,7 +80,7 @@ export class L1Solar {
       }
       const orbit = new THREE.Line(
         new THREE.BufferGeometry().setFromPoints(pts),
-        new THREE.LineBasicMaterial({ color: 0x3d5a78, transparent: true, opacity: .5, fog: false })
+        new THREE.LineBasicMaterial({ color: 0x4d87a5, transparent: true, opacity: .65, fog: false })
       );
       g.add(orbit);
       if (p.size === 0) { // 地球轨道标记
@@ -146,8 +146,8 @@ export class L1Solar {
         color, size, transparent: true, opacity: .5, depthWrite: false, fog: false,
       }));
     };
-    this.asteroidBelt = mkBelt(2.1, 3.3, 1400, 1.2, 0x8a7a68, .6);
-    this.kuiperBelt = mkBelt(34, 48, 2600, 1.4, 0x7a95a8, 1.6);
+    this.asteroidBelt = mkBelt(2.1, 3.3, 1400, 1.2, 0x6f6252, .6);
+    this.kuiperBelt = mkBelt(34, 48, 2600, 1.4, 0x5c7c92, 1.6);
     g.add(this.asteroidBelt, this.kuiperBelt);
 
     /* —— 彗星（离子尾 + 尘埃尾） —— */
@@ -158,8 +158,8 @@ export class L1Solar {
     const tailGeo = new THREE.ConeGeometry(2.2, 26, 10, 1, true);
     tailGeo.translate(0, -13, 0);
     const ionTail = new THREE.Mesh(tailGeo, new THREE.MeshBasicMaterial({
-      color: 0x66c8ff, transparent: true, opacity: .4, side: THREE.DoubleSide, depthWrite: false, fog: false,
-      blending: THREE.AdditiveBlending,
+      color: 0x3f9ad4, transparent: true, opacity: .45, side: THREE.DoubleSide, depthWrite: false, fog: false,
+      blending: THREE.NormalBlending,
     }));
     const dustTail = ionTail.clone();
     dustTail.material = ionTail.material.clone();
@@ -193,11 +193,11 @@ export class L1Solar {
         uniform float uAmt; uniform vec3 uColor;
         void main() {
           float rim = pow(1.0 - abs(dot(vN, vV)), 2.4);
-          float a = rim * .5 * uAmt;
-          gl_FragColor = vec4(uColor * a * 1.4, a);
+          float a = rim * .55 * uAmt;
+          gl_FragColor = vec4(uColor * .68, a);
           #include <logdepthbuf_fragment>
         }`,
-      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+      transparent: true, depthWrite: false, blending: THREE.NormalBlending, side: THREE.DoubleSide,
     }));
     hp.scale.setScalar(auToScene(120));
     hp.renderOrder = 4;
@@ -207,8 +207,8 @@ export class L1Solar {
     /* —— 黄道光（太阳附近薄盘） —— */
     const zGeo = new THREE.RingGeometry(auToScene(.3), auToScene(1.6), 48);
     const zodi = new THREE.Mesh(zGeo, new THREE.MeshBasicMaterial({
-      color: 0xcaa870, transparent: true, opacity: .07, side: THREE.DoubleSide, depthWrite: false, fog: false,
-      blending: THREE.AdditiveBlending,
+      color: 0xd9b47a, transparent: true, opacity: .12, side: THREE.DoubleSide, depthWrite: false, fog: false,
+      blending: THREE.NormalBlending,
     }));
     zodi.rotation.x = Math.PI / 2;
     g.add(zodi);
