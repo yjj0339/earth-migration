@@ -3,6 +3,24 @@
 > 《流浪地球》同人 · 电影级交互式 WebGL 双页体验。从零构建，依据提示词
 > `D:/WokBuddy/2026-10-23-12-02-03/prompts/提示词-地球迁移计划-earth-migration.md`。
 
+## v2 升级（2026-10-24 · 晨光星图版）
+
+用户要求全面升级：画质 / 流畅度 / 稳定性 / **浅色主题** / **原生中文**。
+- 浅色方向定调「晨光星图」：白底淡青宇宙、深青墨线框、白玻璃面板、天体深青描边
+  （天文图鉴/制图美学）。与全局浅色偏好对齐，深空黑底按用户直接指令废弃。
+- **关键技术：加法混合在浅色背景上会隐形（加色→更白）**。光柱/大气/冲击波/弓形激波/
+  日冕/彗尾/银河粒子全部改 NormalBlending 并输出 (color, alpha)，颜色加深。
+  bloom 阈值提到 1.0 只对 HDR>1 发光体生效，白底不过曝。
+- 原生中文：全部 HUD/字幕/按钮/遥测/事件日志中文化；--zh 字体栈（PingFang/雅黑）；
+  Orbitron 只用于数字点缀；中文标题+英文副题反转排版。
+- 画质：地球贴图 1024→2048（脊线大陆+双频云+双层夜灯）、球体 128→160 段、
+  光柱 ray-march 步数 20→24。
+- 流畅度：DRS 自适应分辨率（2/1.6/1.3/1.05 四档，<42fps 降、>57fps 升，localStorage 记忆）、
+  HUD 10Hz 节流、标签 15Hz 节流、volplume tick 零 clone、renderFrame 真实 dt（原 1/60 硬编码）。
+- 稳定性：safeAnimate 单帧异常不炸（3 连击才停机降级重启）、webglcontextlost/restored、
+  visibilitychange 静音+丢帧、dash 括号笔误回归检查。
+- 回归：双部 Playwright 零报错；浅色截图目验通过（地球/光柱/面板中文/银河星图风/手机端）。
+
 ## 基本盘
 
 - 目录：`E:\ZCODE\earth-migration`
@@ -30,7 +48,7 @@
 - [x] 2026-10-23 双页 Playwright 冒烟零报错 + 关键画面目验通过（倒计时环/木星/银河/天枢站/体积光柱）
 - [x] 2026-10-23 部署 https://yjj0339.github.io/earth-migration/ （200+MIME 验证、二维码、导航主页卡片、手机截图）
 
-## 坑与决策记录
+## 坑与决策记录（v1 + v2）
 
 1. **logarithmicDepthBuffer + 自定义 ShaderMaterial**：logdepth 块不自动注入自定义 shader，
    必须手动 `#include <common>` + `<logdepthbuf_pars_*>` + `<logdepthbuf_*>` 四件套，
@@ -51,3 +69,9 @@
    夜面/尾随半球=+X——影片镜头要放 +X 侧才能拍到点亮的发动机群。
 10. 公转速度标定：orbSpeed 定义为"365 天行星的 rad/s"，各行星按 365.25/days 比例缩放，
     四档 REAL / 2π/25 / 2π/3 / 2π/0.4。
+11. **浅色主题下 AdditiveBlending 隐形**：加法混合向白收敛，浅底上特效全部消失。
+    解法=全部换 NormalBlending，shader 输出 (color, clamp(luma,0,.9)) 作 alpha；
+    bloom 阈值 1.0 + 强度 .38。
+12. **中文字体栈**：Rajdhani/Orbitron 无 CJK，body 加 --zh 回退栈；标题中文大字+英文小字反转。
+13. **DRS 别忘 composer.setSize**：只调 pixelRatio 不重设 composer 会让泛光通道尺寸失配。
+14. dash.js 手滑 `['..', '延时')` 括号笔误——每次 vm.SourceTextModule 语法检查兜住。
